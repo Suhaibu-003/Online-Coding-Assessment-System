@@ -1,23 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { getPublishedTestsApi, mySubmissionsApi } from "../services/api";
 import LoadingSpinner from "../components/LoadingSpinner";
+import StatCard from "../components/StatCard";
+import ScoreRing from "../components/ScoreRing";
+
 
 export default function CandidateDashboard() {
   const [tests, setTests] = useState([]);
   const [attempts, setAttempts] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const stats = useMemo(() => {
-    const totalAttempts = attempts.length;
-    const completed = attempts.filter((a) => a.status === "COMPLETED");
-    const avgScore =
-      completed.length === 0
-        ? 0
-        : Math.round(completed.reduce((sum, a) => sum + (a.score || 0), 0) / completed.length);
-
-    return { totalAttempts, completedCount: completed.length, avgScore };
-  }, [attempts]);
+  const navigate = useNavigate();
+  const [q, setQ] = useState("");
+  const [difficulty, setDifficulty] = useState("all");
+  const [sort, setSort] = useState("newest"); // newest | duration
 
   useEffect(() => {
     (async () => {
@@ -25,13 +21,45 @@ export default function CandidateDashboard() {
         const [tRes, aRes] = await Promise.all([getPublishedTestsApi(), mySubmissionsApi()]);
         setTests(tRes.data || []);
         setAttempts(aRes.data || []);
-      } catch (e) {
-        console.log(e);
       } finally {
         setLoading(false);
       }
     })();
   }, []);
+
+  const stats = useMemo(() => {
+    const completed = attempts.filter((a) => a.status === "COMPLETED");
+    const avgScore =
+      completed.length === 0
+        ? 0
+        : Math.round(completed.reduce((sum, a) => sum + (a.score || 0), 0) / completed.length);
+
+    const best = completed.length === 0 ? 0 : Math.max(...completed.map((a) => a.score || 0));
+    return {
+      totalAttempts: attempts.length,
+      completed: completed.length,
+      avgScore,
+      best
+    };
+  }, [attempts]);
+
+  const filteredTests = useMemo(() => {
+    const text = q.trim().toLowerCase();
+    let arr = [...tests];
+
+    if (text) {
+      arr = arr.filter((t) => (t.name || "").toLowerCase().includes(text));
+    }
+    if (difficulty !== "all") {
+      // if you don't store difficulty on test, this filter will just do nothing
+      arr = arr.filter((t) => (t.difficulty || "all").toLowerCase() === difficulty);
+    }
+
+    if (sort === "duration") {
+      arr.sort((a, b) => (a.durationMinutes || 0) - (b.durationMinutes || 0));
+    }
+    return arr;
+  }, [tests, q, difficulty, sort]);
 
   const recentAttempts = useMemo(() => attempts.slice(0, 6), [attempts]);
 
@@ -47,99 +75,119 @@ export default function CandidateDashboard() {
 
   return (
     <div className="container py-4">
+      {/* Header */}
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div>
           <h3 className="mb-0">Candidate Dashboard</h3>
-          <div className="text-muted">Pick a test and start coding.</div>
+          <div className="text-muted">Search tests, practice, and track progress.</div>
         </div>
         <Link to="/attempts" className="btn btn-outline-primary">
-          View All Attempts
+          My Attempts
         </Link>
       </div>
 
-      {/* Stats cards */}
-      <div className="row g-3 mb-3">
-        <div className="col-md-4">
-          <div className="card shadow-sm h-100">
-            <div className="card-body">
-              <div className="text-muted">Avg Score</div>
-              <div className="display-6">{stats.avgScore}%</div>
-              <div className="progress mt-2" style={{ height: 10 }}>
-                <div className="progress-bar" style={{ width: `${stats.avgScore}%` }} />
-              </div>
-              <div className="small text-muted mt-2">Based on completed submissions</div>
-            </div>
-          </div>
+      {/* Stats */}
+      <div className="row g-3 mb-4">
+        <div className="col-md-3">
+          <StatCard title="Avg Score" value={`${stats.avgScore}%`} color="primary" />
         </div>
-
-        <div className="col-md-4">
-          <div className="card shadow-sm h-100">
-            <div className="card-body">
-              <div className="text-muted">Completed</div>
-              <div className="display-6">{stats.completedCount}</div>
-              <div className="small text-muted mt-2">Successful evaluations stored</div>
-            </div>
-          </div>
+        <div className="col-md-3">
+          <StatCard title="Best Score" value={`${stats.best}%`} color="success" />
         </div>
-
-        <div className="col-md-4">
-          <div className="card shadow-sm h-100">
-            <div className="card-body">
-              <div className="text-muted">Total Attempts</div>
-              <div className="display-6">{stats.totalAttempts}</div>
-              <div className="small text-muted mt-2">All submissions you made</div>
-            </div>
-          </div>
+        <div className="col-md-3">
+          <StatCard title="Completed" value={stats.completed} color="warning" />
+        </div>
+        <div className="col-md-3">
+          <StatCard title="Attempts" value={stats.totalAttempts} color="info" />
         </div>
       </div>
 
-      {/* Tests */}
-      <div className="d-flex justify-content-between align-items-center mb-2">
-        <h5 className="mb-0">Available Tests</h5>
-        <span className="text-muted small">{tests.length} tests</span>
-      </div>
+      {/* Test Explorer */}
+      <div className="card shadow-sm mb-4">
+        <div className="card-body">
+          <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+            <div>
+              <h5 className="mb-0">Available Tests</h5>
+              <div className="small text-muted">{filteredTests.length} tests found</div>
+            </div>
 
-      {tests.length === 0 ? (
-        <div className="alert alert-info">No published tests available.</div>
-      ) : (
-        <div className="row g-3 mb-4">
-          {tests.map((t) => (
-            <div className="col-md-6 col-lg-4" key={t._id}>
-              <div className="card shadow-sm h-100">
-                <div className="card-body d-flex flex-column">
-                  <h5 className="card-title">{t.name}</h5>
-                  <div className="text-muted small mb-3">
-                    Duration: {t.durationMinutes} mins • Questions: {t.questions?.length ?? "-"}
-                  </div>
+            <div className="d-flex flex-wrap gap-2">
+              <input
+                className="form-control"
+                style={{ width: 240 }}
+                placeholder="Search by test name…"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
 
-                  <div className="mt-auto d-grid gap-2">
-                    <Link to={`/test/${t._id}`} className="btn btn-primary">
-                      Start Test
-                    </Link>
+              <select
+                className="form-select"
+                style={{ width: 160 }}
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
+              >
+                <option value="all">All difficulty</option>
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+
+              <select
+                className="form-select"
+                style={{ width: 160 }}
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+              >
+                <option value="newest">Sort: Newest</option>
+                <option value="duration">Sort: Duration</option>
+              </select>
+            </div>
+          </div>
+
+          {filteredTests.length === 0 ? (
+            <div className="alert alert-light border mb-0">
+              No tests match your search. Try clearing filters.
+            </div>
+          ) : (
+            <div className="row g-3">
+              {filteredTests.map((t) => (
+                <div className="card h-100 shadow border-0 rounded-4">
+                  <div className="card-body d-flex flex-column">
+                    <h5 className="fw-bold">{t.name}</h5>
+
+                    <div className="d-flex justify-content-between mb-3">
+                      <span className="badge bg-secondary">
+                        {t.durationMinutes} mins
+                      </span>
+                      <span className="badge bg-dark">
+                        {t.questions?.length} Qs
+                      </span>
+                    </div>
+
                     <button
-                      className="btn btn-outline-secondary"
-                      onClick={() => navigator.clipboard.writeText(t._id)}
+                      className="btn btn-gradient mt-auto"
+                      onClick={() => navigate(`/test/${t._id}`)}
                     >
-                      Copy Test ID
+                      Start Test
                     </button>
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
-      )}
+      </div>
 
       {/* Recent Attempts */}
       <div className="d-flex justify-content-between align-items-center mb-2">
         <h5 className="mb-0">Recent Attempts</h5>
         <Link to="/attempts" className="small">
-          See all
+          View all
         </Link>
       </div>
 
       {recentAttempts.length === 0 ? (
-        <div className="alert alert-light border">No attempts yet. Start a test to see your history.</div>
+        <div className="alert alert-light border">No attempts yet. Start a test to see your progress.</div>
       ) : (
         <div className="card shadow-sm">
           <div className="table-responsive">
@@ -149,7 +197,7 @@ export default function CandidateDashboard() {
                   <th>Date</th>
                   <th>Test</th>
                   <th>Question</th>
-                  <th>Language</th>
+                  <th>Lang</th>
                   <th>Status</th>
                   <th>Score</th>
                 </tr>

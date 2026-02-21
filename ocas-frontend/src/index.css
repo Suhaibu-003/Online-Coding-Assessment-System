@@ -66,3 +66,28 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+/* Soft dashboard background */
+body {
+  background: linear-gradient(135deg, #eef2ff, #f8fafc);
+  min-height: 100vh;
+}
+
+/* Card hover effect */
+.card:hover {
+  transform: translateY(-4px);
+  transition: 0.2s ease-in-out;
+}
+
+/* Smooth transitions */
+.card, .btn {
+  transition: all 0.2s ease-in-out;
+}
+.btn-gradient {
+  background: linear-gradient(45deg, #6366f1, #8b5cf6);
+  color: white;
+  border: none;
+}
+
+.btn-gradient:hover {
+  opacity: 0.9;
+}

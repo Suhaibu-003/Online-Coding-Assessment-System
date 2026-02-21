@@ -46,12 +46,15 @@ export const runCodeApi = (data) =>
   api.post("/submissions/run", data);
 
 export const submitCodeApi = (data) =>
-  api.post("/submissions/run", data);
+  api.post("/submissions/submit", data);
 
 export const mySubmissionsApi = () =>
   api.get("/submissions/my");
 
 export const testSubmissionsApi = (testId) =>
   api.get(`/submissions/test/${testId}`);
+
+
+
 
 export default api;

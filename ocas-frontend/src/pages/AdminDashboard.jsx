@@ -2,6 +2,23 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getPublishedTestsApi, testSubmissionsApi } from "../services/api";
 import LoadingSpinner from "../components/LoadingSpinner";
+import StatCard from "../components/StatCard";
+import ScoreRing from "../components/ScoreRing";
+
+const toCSV = (rows) => {
+  const esc = (v) => `"${String(v ?? "").replaceAll('"', '""')}"`;
+  const header = ["Date", "Candidate", "Email", "Question", "Language", "Status", "Score"];
+  const body = rows.map((s) => [
+    new Date(s.createdAt).toLocaleString(),
+    s.candidate?.name || "-",
+    s.candidate?.email || "-",
+    s.question?.title || "-",
+    (s.language || "").toUpperCase(),
+    s.status || "-",
+    `${s.score ?? 0}%`
+  ]);
+  return [header, ...body].map((r) => r.map(esc).join(",")).join("\n");
+};
 
 export default function AdminDashboard() {
   const [tests, setTests] = useState([]);
@@ -11,24 +28,14 @@ export default function AdminDashboard() {
   const [loadingSubs, setLoadingSubs] = useState(false);
   const [err, setErr] = useState("");
 
-  const stats = useMemo(() => {
-    const totalSubs = subs.length;
-    const completed = subs.filter((s) => s.status === "COMPLETED");
-    const avgScore =
-      completed.length === 0
-        ? 0
-        : Math.round(completed.reduce((sum, s) => sum + (s.score || 0), 0) / completed.length);
-
-    const top = completed.length === 0 ? 0 : Math.max(...completed.map((s) => s.score || 0));
-
-    return { totalSubs, completedCount: completed.length, avgScore, top };
-  }, [subs]);
+  const [search, setSearch] = useState("");
+  const [onlyCompleted, setOnlyCompleted] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
         setErr("");
-        const tRes = await getPublishedTestsApi(); // reuse /tests list
+        const tRes = await getPublishedTestsApi();
         const all = tRes.data || [];
         setTests(all);
 
@@ -68,6 +75,48 @@ export default function AdminDashboard() {
     }
   };
 
+  const filteredSubs = useMemo(() => {
+    const text = search.trim().toLowerCase();
+    let arr = [...subs];
+
+    if (onlyCompleted) arr = arr.filter((s) => s.status === "COMPLETED");
+
+    if (text) {
+      arr = arr.filter((s) => {
+        const name = (s.candidate?.name || "").toLowerCase();
+        const email = (s.candidate?.email || "").toLowerCase();
+        const q = (s.question?.title || "").toLowerCase();
+        const lang = (s.language || "").toLowerCase();
+        return name.includes(text) || email.includes(text) || q.includes(text) || lang.includes(text);
+      });
+    }
+    return arr;
+  }, [subs, search, onlyCompleted]);
+
+  const stats = useMemo(() => {
+    const totalSubs = subs.length;
+    const completed = subs.filter((s) => s.status === "COMPLETED");
+    const avgScore =
+      completed.length === 0
+        ? 0
+        : Math.round(completed.reduce((sum, s) => sum + (s.score || 0), 0) / completed.length);
+    const top = completed.length === 0 ? 0 : Math.max(...completed.map((s) => s.score || 0));
+    return { totalSubs, completed: completed.length, avgScore, top };
+  }, [subs]);
+
+  const exportCSV = () => {
+    const csv = toCSV(filteredSubs);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `submissions_${selectedTestId || "test"}.csv`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div className="container py-4">
@@ -83,7 +132,7 @@ export default function AdminDashboard() {
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div>
           <h3 className="mb-0">Admin Dashboard</h3>
-          <div className="text-muted">Monitor submissions and performance.</div>
+          <div className="text-muted">Filter submissions, export reports, track performance.</div>
         </div>
         <Link to="/admin/create-test" className="btn btn-primary">
           + Create Test
@@ -92,12 +141,12 @@ export default function AdminDashboard() {
 
       {err && <div className="alert alert-danger">{err}</div>}
 
-      {/* Filter */}
+      {/* Top Controls */}
       <div className="card shadow-sm mb-3">
-        <div className="card-body d-flex flex-wrap align-items-center justify-content-between gap-2">
-          <div className="fw-semibold">Select Test</div>
-          <div className="d-flex gap-2 align-items-center" style={{ minWidth: 320 }}>
-            <select className="form-select" value={selectedTestId} onChange={onChangeTest}>
+        <div className="card-body d-flex flex-wrap gap-2 align-items-center justify-content-between">
+          <div className="d-flex flex-wrap gap-2 align-items-center">
+            <div className="fw-semibold">Test:</div>
+            <select className="form-select" style={{ width: 320 }} value={selectedTestId} onChange={onChangeTest}>
               {tests.map((t) => (
                 <option key={t._id} value={t._id}>
                   {t.name}
@@ -112,53 +161,65 @@ export default function AdminDashboard() {
               Copy ID
             </button>
           </div>
+
+          <div className="d-flex flex-wrap gap-2 align-items-center">
+            <input
+              className="form-control"
+              style={{ width: 260 }}
+              placeholder="Search candidate / email / question / lang…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <div className="form-check">
+              <input
+                id="onlyCompleted"
+                className="form-check-input"
+                type="checkbox"
+                checked={onlyCompleted}
+                onChange={(e) => setOnlyCompleted(e.target.checked)}
+              />
+              <label className="form-check-label" htmlFor="onlyCompleted">
+                Completed only
+              </label>
+            </div>
+            <button className="btn btn-outline-primary" onClick={exportCSV} disabled={filteredSubs.length === 0}>
+              Export CSV
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Stats */}
       <div className="row g-3 mb-3">
         <div className="col-md-3">
-          <div className="card shadow-sm h-100">
-            <div className="card-body">
-              <div className="text-muted">Total Submissions</div>
-              <div className="display-6">{stats.totalSubs}</div>
-            </div>
-          </div>
+          <StatCard title="Total Submissions" value={stats.totalSubs} />
         </div>
         <div className="col-md-3">
-          <div className="card shadow-sm h-100">
-            <div className="card-body">
-              <div className="text-muted">Completed</div>
-              <div className="display-6">{stats.completedCount}</div>
-            </div>
-          </div>
+          <StatCard title="Completed" value={stats.completed} subtitle="Evaluated successfully" />
         </div>
         <div className="col-md-3">
-          <div className="card shadow-sm h-100">
-            <div className="card-body">
-              <div className="text-muted">Avg Score</div>
-              <div className="display-6">{stats.avgScore}%</div>
-              <div className="progress mt-2" style={{ height: 10 }}>
-                <div className="progress-bar" style={{ width: `${stats.avgScore}%` }} />
+          <StatCard
+            title="Avg Score"
+            value={`${stats.avgScore}%`}
+            right={
+              <div className="text-primary">
+                <ScoreRing score={stats.avgScore} />
               </div>
-            </div>
-          </div>
+            }
+          />
         </div>
         <div className="col-md-3">
-          <div className="card shadow-sm h-100">
-            <div className="card-body">
-              <div className="text-muted">Top Score</div>
-              <div className="display-6">{stats.top}%</div>
-            </div>
-          </div>
+          <StatCard title="Top Score" value={`${stats.top}%`} subtitle="Highest in this test" />
         </div>
       </div>
 
-      {/* Submissions Table */}
+      {/* Table */}
       <div className="card shadow-sm">
         <div className="card-header d-flex justify-content-between align-items-center">
           <div className="fw-semibold">Submissions</div>
-          {loadingSubs && <span className="small text-muted">Loading…</span>}
+          <div className="small text-muted">
+            {loadingSubs ? "Loading…" : `${filteredSubs.length} shown`}
+          </div>
         </div>
 
         <div className="table-responsive">
@@ -181,14 +242,14 @@ export default function AdminDashboard() {
                     <LoadingSpinner text="Fetching submissions..." />
                   </td>
                 </tr>
-              ) : subs.length === 0 ? (
+              ) : filteredSubs.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="text-muted p-3">
-                    No submissions for this test yet.
+                    No submissions found for current filters.
                   </td>
                 </tr>
               ) : (
-                subs.map((s) => (
+                filteredSubs.map((s) => (
                   <tr key={s._id}>
                     <td>{new Date(s.createdAt).toLocaleString()}</td>
                     <td>{s.candidate?.name || "-"}</td>
@@ -209,7 +270,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="card-footer text-muted small">
-          Tip: Use “Copy ID” to share the test id with teammates (for debugging).
+          Pro tip: Use Search + “Completed only” to quickly filter results.
         </div>
       </div>
     </div>
