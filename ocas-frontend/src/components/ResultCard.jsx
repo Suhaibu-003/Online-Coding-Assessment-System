@@ -5,7 +5,7 @@ export default function ResultCard({ result, index }) {
       <div className="card-body">
         <div className="d-flex justify-content-between align-items-center">
           <h6 className="mb-0">
-            Testcase {index + 1} — {ok ? "✅ Passed" : "❌ Failed"}
+            Testcase {index + 1} — {ok ? " Passed" : " Failed"}
           </h6>
           <span className={`badge ${ok ? "text-bg-success" : "text-bg-danger"}`}>
             {result.status || (ok ? "Accepted" : "Failed")}
