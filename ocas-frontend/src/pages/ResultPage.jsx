@@ -1,245 +1,104 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import { LayoutDashboard, RotateCcw, PartyPopper, Target, Timer, HardDrive } from "lucide-react";
 import ScoreRing from "../components/ScoreRing";
 
 export default function ResultPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
 
-  if (!state) {
-    return (
-      <div className="container py-5">
-        <div className="alert alert-warning">No result data found.</div>
-        <button className="btn btn-primary" onClick={() => navigate("/candidate")}>
-          Go Dashboard
-        </button>
-      </div>
-    );
-  }
+  if (!state) return <div className="p-5 text-center">No data found.</div>;
 
-  const copyJSON = async () => {
-    await navigator.clipboard.writeText(JSON.stringify(state, null, 2));
-    alert("Result JSON copied ✅");
-  };
-
-  const passed = state.passedCases ?? 0;
-  const total = state.totalCases ?? 0;
   const score = state.score ?? 0;
+  const isPassed = score >= 60;
+
+  // Dynamic colors based on success
+  const themeColor = isPassed ? "#10b981" : "#ef4444";
+  const bgGradient = isPassed 
+    ? "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)" 
+    : "linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)";
 
   return (
-    <div className="container py-4">
-      {/* Gradient Header */}
-      <div className="p-4 rounded-4 shadow-sm mb-4 text-white"
-        style={{ background: "linear-gradient(90deg,#4f46e5,#9333ea,#db2777)" }}
-      >
-        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
-          <div>
-            <h3 className="mb-1 fw-bold">Submission Result</h3>
-            <div className="small opacity-75">
-              Submission ID: <span className="fw-semibold">{state.submissionId}</span>
-            </div>
-          </div>
-
-          <div className="d-flex gap-2">
-            <button className="btn btn-light btn-sm fw-semibold" onClick={copyJSON}>
-              Copy JSON
-            </button>
-            <button className="btn btn-outline-light btn-sm fw-semibold" onClick={() => navigate("/candidate")}>
-              Dashboard
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="row g-3 mb-4">
-        {/* Score Card */}
-        <div className="col-md-4">
-          <div className="card shadow border-0 rounded-4 h-100">
-            <div className="card-body d-flex justify-content-between align-items-center">
-              <div>
-                <div className="text-muted fw-semibold">Score</div>
-                <div className="display-6 fw-bold">{score}%</div>
-                <span className={`badge fs-6 ${score >= 60 ? "bg-success" : "bg-danger"}`}>
-                  {score >= 60 ? "PASSED" : "FAILED"}
-                </span>
+    <div className="min-vh-100 py-5" style={{ background: bgGradient }}>
+      <div className="container" style={{ maxWidth: "900px" }}>
+        
+        {/* Main Glass Card */}
+        <div className="card border-0 shadow-lg rounded-5 overflow-hidden bg-white bg-opacity-75 backdrop-blur">
+          <div className="card-body p-4 p-md-5">
+            
+            {/* Header Section */}
+            <div className="text-center mb-5">
+              <div className="mb-3 d-inline-block p-3 rounded-circle bg-white shadow-sm">
+                <PartyPopper size={40} color={themeColor} />
               </div>
-              <div className="text-primary">
-                <ScoreRing score={score} size={82} />
+              <h1 className="fw-black display-6 mb-1">Assessment Complete!</h1>
+              <p className="text-muted">Submission ID: {state.submissionId?.substring(0, 8)}</p>
+            </div>
+
+            {/* Score Display Row */}
+            <div className="row g-4 align-items-center mb-5">
+              <div className="col-md-6 text-center border-md-end">
+                <div className="d-flex justify-content-center mb-3">
+                  <ScoreRing score={score} size={160} strokeWidth={10} color={themeColor} />
+                </div>
+                <h2 className="fw-bold" style={{ color: themeColor }}>{isPassed ? "Great Job!" : "Keep Practicing!"}</h2>
+              </div>
+              
+              <div className="col-md-6 px-md-5">
+                <div className="d-flex flex-column gap-3">
+                  <StatRow icon={<Target size={20}/>} label="Accuracy" value={`${score}%`} color="primary" />
+                  <StatRow icon={<Timer size={20}/>} label="Test Cases" value={`${state.passedCases} / ${state.totalCases}`} color="success" />
+                  <StatRow icon={<HardDrive size={20}/>} label="Status" value={isPassed ? "PASSED" : "RETRY"} color={isPassed ? "success" : "danger"} />
+                </div>
               </div>
             </div>
-            <div className="card-footer small text-muted">
-              Passed {passed}/{total} testcases
-            </div>
-          </div>
-        </div>
 
-        {/* Performance Card */}
-        <div className="col-md-4">
-          <div className="card shadow border-0 rounded-4 h-100">
-            <div className="card-body">
-              <div className="text-muted fw-semibold mb-2">Performance</div>
-              <div className="progress" style={{ height: 12 }}>
-                <div className="progress-bar" style={{ width: `${score}%` }} />
-              </div>
-              <div className="small text-muted mt-2">
-                Target: <b>80%+</b> for strong interview confidence.
-              </div>
-
-              <div className="mt-3 p-3 rounded-3"
-                style={{ background: "linear-gradient(135deg,#ecfeff,#eef2ff)" }}
+            {/* Action Buttons */}
+            <div className="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+              <button 
+                className="btn btn-lg rounded-pill px-5 shadow-sm d-flex align-items-center justify-content-center gap-2"
+                style={{ backgroundColor: themeColor, color: 'white', border: 'none' }}
+                onClick={() => navigate("/candidate")}
               >
-                <div className="fw-semibold">Suggestion</div>
-                <div className="small text-muted">
-                  If failed cases exist, check edge cases + input parsing.
-                </div>
-              </div>
+                <RotateCcw size={20} /> Try Another
+              </button>
+              <button 
+                className="btn btn-lg btn-white border-0 shadow-sm rounded-pill px-5 d-flex align-items-center justify-content-center gap-2"
+                onClick={() => navigate("/candidate")}
+              >
+                <LayoutDashboard size={20} /> Dashboard
+              </button>
             </div>
+
           </div>
         </div>
 
-        {/* Next Action */}
-        <div className="col-md-4">
-          <div className="card shadow border-0 rounded-4 h-100">
-            <div className="card-body">
-              <div className="text-muted fw-semibold">Next Action</div>
-              <div className="mt-2 d-grid gap-2">
-                <button
-                  className="btn btn-gradient fw-semibold"
-                  onClick={() => navigate("/candidate")}
-                >
-                  Take Another Test
-                </button>
-                <button
-                  className="btn btn-outline-secondary fw-semibold"
-                  onClick={() => navigate("/attempts")}
-                >
-                  View My Attempts
-                </button>
+        {/* Simplified Testcase List */}
+        <div className="mt-4">
+          <h5 className="fw-bold mb-3 px-2">Detailed Results</h5>
+          <div className="d-flex flex-column gap-2">
+            {(state.results || []).map((r, idx) => (
+              <div key={idx} className="bg-white rounded-4 p-3 shadow-sm d-flex align-items-center border-start border-4" style={{ borderColor: r.passed ? '#10b981' : '#ef4444' }}>
+                <div className="me-auto fw-bold">Test Case {idx + 1}</div>
+                <div className={`badge rounded-pill ${r.passed ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}`}>
+                  {r.passed ? "Passed" : "Failed"}
+                </div>
               </div>
-              <div className="small text-muted mt-3">
-                Your submission is saved automatically ✅
-              </div>
-            </div>
+            ))}
           </div>
         </div>
+
       </div>
+    </div>
+  );
+}
 
-      {/* Tabs */}
-      <ul className="nav nav-pills gap-2 mb-3" role="tablist">
-        <li className="nav-item">
-          <button className="nav-link active fw-semibold" data-bs-toggle="tab" data-bs-target="#tab_cases" type="button">
-            ✅ Testcases
-          </button>
-        </li>
-        <li className="nav-item">
-          <button className="nav-link fw-semibold" data-bs-toggle="tab" data-bs-target="#tab_summary" type="button">
-            📌 Summary
-          </button>
-        </li>
-      </ul>
-
-      <div className="tab-content">
-        {/* Testcases */}
-        <div className="tab-pane fade show active" id="tab_cases">
-          <div className="card shadow border-0 rounded-4">
-            <div className="card-body">
-              <div className="accordion" id="casesAcc">
-                {(state.results || []).map((r, idx) => {
-                  const ok = r.passed;
-                  return (
-                    <div className="accordion-item rounded-3 overflow-hidden mb-2" key={idx}>
-                      <h2 className="accordion-header">
-                        <button
-                          className={`accordion-button ${idx === 0 ? "" : "collapsed"}`}
-                          data-bs-toggle="collapse"
-                          data-bs-target={`#case_${idx}`}
-                          type="button"
-                        >
-                          <div className="d-flex align-items-center gap-2">
-                            <span className={`badge fs-6 ${ok ? "bg-success" : "bg-danger"}`}>
-                              {ok ? "PASSED" : "FAILED"}
-                            </span>
-                            <span className="fw-semibold">Testcase {idx + 1}</span>
-                            <span className="text-muted small">{r.status || ""}</span>
-                          </div>
-                        </button>
-                      </h2>
-
-                      <div
-                        id={`case_${idx}`}
-                        className={`accordion-collapse collapse ${idx === 0 ? "show" : ""}`}
-                        data-bs-parent="#casesAcc"
-                      >
-                        <div className="accordion-body">
-                          <div className="row g-3">
-                            <div className="col-md-4">
-                              <div className="small text-muted fw-semibold">Input</div>
-                              <pre className="bg-light p-2 rounded">{r.input || "(empty)"}</pre>
-                            </div>
-                            <div className="col-md-4">
-                              <div className="small text-muted fw-semibold">Expected</div>
-                              <pre className="bg-light p-2 rounded">{r.expectedOutput}</pre>
-                            </div>
-                            <div className="col-md-4">
-                              <div className="small text-muted fw-semibold">Your Output</div>
-                              <pre className="bg-light p-2 rounded">{r.actualOutput || "(empty)"}</pre>
-                            </div>
-                          </div>
-
-                          <div className="d-flex flex-wrap gap-2 mt-2">
-                            <span className="badge text-bg-light">⏱ Time: {r.time ?? "-"}s</span>
-                            <span className="badge text-bg-light">💾 Memory: {r.memory ?? "-"} KB</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Summary */}
-        <div className="tab-pane fade" id="tab_summary">
-          <div className="card shadow border-0 rounded-4">
-            <div className="card-body">
-              <h5 className="fw-bold mb-2">How scoring works</h5>
-              <p className="text-muted mb-3">
-                Your solution is evaluated against all testcases (including hidden ones).
-                Score is based on passed / total.
-              </p>
-
-              <div className="row g-3">
-                <div className="col-md-6">
-                  <div className="p-3 rounded-3 border bg-light">
-                    <div className="fw-semibold">✅ Best Practice</div>
-                    <ul className="mb-0 small">
-                      <li>Use <b>Run</b> to test sample input.</li>
-                      <li>Fix compile errors first.</li>
-                      <li>Then handle edge cases.</li>
-                    </ul>
-                  </div>
-                </div>
-                <div className="col-md-6">
-                  <div className="p-3 rounded-3 border bg-light">
-                    <div className="fw-semibold">🎯 Improve Score</div>
-                    <ul className="mb-0 small">
-                      <li>Handle empty input & large constraints.</li>
-                      <li>Check output formatting.</li>
-                      <li>Optimize loops if time limit fails.</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-3 alert alert-info mb-0">
-                Tip: If score is low, open failed testcase and compare expected vs your output.
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+// Simple Helper Component
+function StatRow({ icon, label, value, color }) {
+  return (
+    <div className="d-flex align-items-center gap-3 p-3 rounded-4 bg-white shadow-sm">
+      <div className={`text-${color}`}>{icon}</div>
+      <div className="flex-grow-1 text-muted small fw-bold text-uppercase">{label}</div>
+      <div className="fw-bold fs-5">{value}</div>
     </div>
   );
 }

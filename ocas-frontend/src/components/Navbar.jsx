@@ -31,7 +31,7 @@ export default function Navbar() {
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
       <div className="container">
         <Link className="navbar-brand fw-bold" to={homeLink}>
-          OCA
+          CodeIntel Platform
         </Link>
 
         <div className="d-flex align-items-center gap-2">

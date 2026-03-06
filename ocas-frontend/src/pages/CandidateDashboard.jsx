@@ -1,17 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Search, Filter, Clock, BookOpen, ChevronRight, Copy, Award, CheckCircle } from "lucide-react";
 import { getPublishedTestsApi, mySubmissionsApi } from "../services/api";
 import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function CandidateDashboard() {
   const navigate = useNavigate();
-
   const [tests, setTests] = useState([]);
   const [attempts, setAttempts] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [q, setQ] = useState("");
-  const [sort, setSort] = useState("newest"); // newest | duration | questions
+  const [sort, setSort] = useState("newest");
 
   useEffect(() => {
     (async () => {
@@ -19,8 +18,6 @@ export default function CandidateDashboard() {
         const [tRes, aRes] = await Promise.all([getPublishedTestsApi(), mySubmissionsApi()]);
         setTests(tRes.data || []);
         setAttempts(aRes.data || []);
-      } catch (e) {
-        console.log(e);
       } finally {
         setLoading(false);
       }
@@ -29,260 +26,157 @@ export default function CandidateDashboard() {
 
   const stats = useMemo(() => {
     const completed = attempts.filter((a) => a.status === "COMPLETED");
-    const avgScore =
-      completed.length === 0
-        ? 0
-        : Math.round(completed.reduce((sum, a) => sum + (a.score || 0), 0) / completed.length);
-
+    const avgScore = completed.length === 0 ? 0 : Math.round(completed.reduce((sum, a) => sum + (a.score || 0), 0) / completed.length);
     const best = completed.length === 0 ? 0 : Math.max(...completed.map((a) => a.score || 0));
-    return {
-      avgScore,
-      best,
-      completed: completed.length,
-      totalAttempts: attempts.length
-    };
+    return { avgScore, best, completed: completed.length, total: attempts.length };
   }, [attempts]);
 
   const filteredTests = useMemo(() => {
-    const text = q.trim().toLowerCase();
-    let arr = [...tests];
-
-    if (text) {
-      arr = arr.filter((t) => (t.name || "").toLowerCase().includes(text));
-    }
-
-    if (sort === "duration") {
-      arr.sort((a, b) => (a.durationMinutes || 0) - (b.durationMinutes || 0));
-    } else if (sort === "questions") {
-      arr.sort((a, b) => (b.questions?.length || 0) - (a.questions?.length || 0));
-    }
-    // newest: keep backend order
-
+    let arr = tests.filter(t => (t.name || "").toLowerCase().includes(q.toLowerCase().trim()));
+    if (sort === "duration") arr.sort((a, b) => (a.durationMinutes || 0) - (b.durationMinutes || 0));
+    if (sort === "questions") arr.sort((a, b) => (b.questions?.length || 0) - (a.questions?.length || 0));
     return arr;
   }, [tests, q, sort]);
 
-  const recentAttempts = useMemo(() => attempts.slice(0, 6), [attempts]);
-
-  if (loading) {
-    return (
-      <div className="container py-4">
-        <div className="card p-3 shadow-sm">
-          <LoadingSpinner text="Loading dashboard..." />
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <LoadingSpinner fullScreen />;
 
   return (
-    <div className="container py-4">
-      {/* Gradient Header */}
-      <div
-        className="p-4 rounded-4 shadow-sm mb-4 text-white"
-        style={{ background: "linear-gradient(90deg,#4f46e5,#9333ea,#db2777)" }}
-      >
-        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div className="min-vh-100 bg-light py-5">
+      <div className="container">
+        
+        {/* Header Section */}
+        <header className="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-5 gap-3">
           <div>
-            <h3 className="mb-1 fw-bold">Candidate Dashboard</h3>
-            <div className="small opacity-75">
-              Search tests • Start coding • Track your performance
-            </div>
+            <h1 className="h3 fw-bold mb-1">Welcome back, Developer</h1>
+            <p className="text-secondary mb-0">Track your progress and sharpen your skills with our active assessments.</p>
           </div>
+          <Link to="/attempts" className="btn btn-white border shadow-sm px-4">
+            View History
+          </Link>
+        </header>
 
-          <div className="d-flex gap-2">
-            <Link to="/attempts" className="btn btn-light btn-sm fw-semibold">
-              My Attempts
-            </Link>
-            <button
-              className="btn btn-outline-light btn-sm fw-semibold"
-              onClick={() => navigate("/candidate")}
-            >
-              Refresh
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="row g-3 mb-4">
-        <div className="col-md-3">
-          <div
-            className="card shadow border-0 rounded-4 text-white h-100"
-            style={{ background: "linear-gradient(135deg,#2563eb,#06b6d4)" }}
-          >
-            <div className="card-body">
-              <div className="small opacity-75 fw-semibold">Avg Score</div>
-              <div className="display-6 fw-bold">{stats.avgScore}%</div>
-              <div className="small opacity-75">Completed attempts only</div>
-            </div>
-          </div>
+        {/* Stats Grid */}
+        <div className="row g-4 mb-5">
+          <StatCard label="Average Score" value={`${stats.avgScore}%`} icon={<Award className="text-primary" />} desc="Based on completed tests" />
+          <StatCard label="Best Performance" value={`${stats.best}%`} icon={<CheckCircle className="text-success" />} desc="Highest score achieved" />
+          <StatCard label="Tests Finished" value={stats.completed} icon={<BookOpen className="text-info" />} desc="Total evaluations done" />
+          <StatCard label="Total Attempts" value={stats.total} icon={<Clock className="text-warning" />} desc="Overall participation" />
         </div>
 
-        <div className="col-md-3">
-          <div
-            className="card shadow border-0 rounded-4 text-white h-100"
-            style={{ background: "linear-gradient(135deg,#16a34a,#22c55e)" }}
-          >
-            <div className="card-body">
-              <div className="small opacity-75 fw-semibold">Best Score</div>
-              <div className="display-6 fw-bold">{stats.best}%</div>
-              <div className="small opacity-75">Your top performance</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-md-3">
-          <div
-            className="card shadow border-0 rounded-4 text-white h-100"
-            style={{ background: "linear-gradient(135deg,#f59e0b,#f97316)" }}
-          >
-            <div className="card-body">
-              <div className="small opacity-75 fw-semibold">Completed</div>
-              <div className="display-6 fw-bold">{stats.completed}</div>
-              <div className="small opacity-75">Evaluated submissions</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-md-3">
-          <div
-            className="card shadow border-0 rounded-4 text-white h-100"
-            style={{ background: "linear-gradient(135deg,#111827,#6b7280)" }}
-          >
-            <div className="card-body">
-              <div className="small opacity-75 fw-semibold">Total Attempts</div>
-              <div className="display-6 fw-bold">{stats.totalAttempts}</div>
-              <div className="small opacity-75">All submissions</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Test Explorer */}
-      <div className="card shadow border-0 rounded-4 mb-4">
-        <div className="card-body">
-          <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-            <div>
-              <h5 className="fw-bold mb-0">Available Tests</h5>
-              <div className="small text-muted">{filteredTests.length} tests found</div>
-            </div>
-
-            <div className="d-flex flex-wrap gap-2">
-              <input
-                className="form-control"
-                style={{ width: 260 }}
-                placeholder="Search test name…"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-              />
-
-              <select
-                className="form-select"
-                style={{ width: 190 }}
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-              >
-                <option value="newest">Sort: Newest</option>
-                <option value="duration">Sort: Duration</option>
-                <option value="questions">Sort: Questions</option>
+        {/* Explorer Section */}
+        <div className="mb-4">
+          <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+            <h4 className="fw-bold mb-0">Available Assessments</h4>
+            <div className="d-flex gap-2 w-100 w-md-auto">
+              <div className="input-group bg-white shadow-sm rounded">
+                <span className="input-group-text bg-transparent border-0"><Search size={18} /></span>
+                <input 
+                  type="text" 
+                  className="form-control border-0 shadow-none" 
+                  placeholder="Search by name..." 
+                  value={q} 
+                  onChange={(e) => setQ(e.target.value)} 
+                />
+              </div>
+              <select className="form-select border-0 shadow-sm" style={{width: '160px'}} value={sort} onChange={(e) => setSort(e.target.value)}>
+                <option value="newest">Newest First</option>
+                <option value="duration">Fastest</option>
+                <option value="questions">Complexity</option>
               </select>
             </div>
           </div>
 
-          {filteredTests.length === 0 ? (
-            <div className="alert alert-light border mb-0">
-              No tests match your search. Try different keywords.
-            </div>
-          ) : (
-            <div className="row g-3">
-              {filteredTests.map((t) => (
-                <div className="col-md-6 col-lg-4" key={t._id}>
-                  <div className="card h-100 shadow-sm border-0 rounded-4">
-                    <div className="card-body d-flex flex-column">
-                      <div className="d-flex justify-content-between align-items-start gap-2 mb-2">
+          <div className="row g-4">
+            {filteredTests.length > 0 ? (
+              filteredTests.map((t) => (
+                <div key={t._id} className="col-md-6 col-lg-4">
+                  <div className="card border-0 shadow-sm h-100 transition-hover">
+                    <div className="card-body p-4">
+                      <div className="d-flex justify-content-between align-items-start mb-3">
                         <h5 className="fw-bold mb-0">{t.name}</h5>
-                        <span className="badge bg-dark">{t.durationMinutes} mins</span>
-                      </div>
-
-                      <div className="d-flex gap-2 mb-3">
-                        <span className="badge bg-secondary">
-                          {t.questions?.length ?? 0} Questions
+                        <span className="badge bg-primary-subtle text-primary rounded-pill px-3">
+                          {t.durationMinutes} min
                         </span>
-                        <span className="badge bg-info text-dark">Practice</span>
                       </div>
-
-                      <div className="mt-auto d-grid gap-2">
-                        <button
-                          className="btn btn-gradient fw-semibold"
-                          onClick={() => navigate(`/test/${t._id}`)}
-                        >
-                          Start Test
+                      <p className="text-secondary small mb-4">
+                        <BookOpen size={14} className="me-1" /> {t.questions?.length || 0} coding challenges
+                      </p>
+                      <div className="d-flex gap-2">
+                        <button onClick={() => navigate(`/test/${t._id}`)} className="btn btn-primary flex-grow-1 d-flex align-items-center justify-content-center gap-2">
+                          Start <ChevronRight size={16} />
                         </button>
-                        <button
-                          className="btn btn-outline-secondary fw-semibold"
-                          onClick={() => navigator.clipboard.writeText(t._id)}
-                        >
-                          Copy Test ID
+                        <button onClick={() => navigator.clipboard.writeText(t._id)} className="btn btn-light" title="Copy ID">
+                          <Copy size={16} />
                         </button>
                       </div>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              ))
+            ) : (
+              <div className="col-12 text-center py-5">
+                <div className="text-muted">No tests found matching your criteria.</div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Recent Attempts */}
-      <div className="d-flex justify-content-between align-items-center mb-2">
-        <h5 className="fw-bold mb-0">Recent Attempts</h5>
-        <Link to="/attempts" className="small">
-          View all
-        </Link>
-      </div>
-
-      {recentAttempts.length === 0 ? (
-        <div className="alert alert-light border rounded-4">
-          No attempts yet. Start a test to see your history.
-        </div>
-      ) : (
-        <div className="card shadow border-0 rounded-4">
+        {/* Recent Activity */}
+        <div className="bg-white rounded shadow-sm overflow-hidden mt-5">
+          <div className="p-4 border-bottom d-flex justify-content-between align-items-center">
+            <h5 className="fw-bold mb-0">Recent Activity</h5>
+            <Link to="/attempts" className="text-decoration-none small fw-bold">View all activity &rarr;</Link>
+          </div>
           <div className="table-responsive">
-            <table className="table table-hover mb-0">
-              <thead className="table-light">
-                <tr>
-                  <th>Date</th>
-                  <th>Test</th>
-                  <th>Question</th>
-                  <th>Lang</th>
+            <table className="table table-hover align-middle mb-0">
+              <thead className="bg-light">
+                <tr className="small text-uppercase text-muted">
+                  <th className="px-4 py-3">Date</th>
+                  <th>Test / Question</th>
+                  <th>Language</th>
                   <th>Status</th>
-                  <th>Score</th>
+                  <th className="text-end px-4">Score</th>
                 </tr>
               </thead>
               <tbody>
-                {recentAttempts.map((s) => (
+                {attempts.slice(0, 5).map((s) => (
                   <tr key={s._id}>
-                    <td>{new Date(s.createdAt).toLocaleString()}</td>
-                    <td>{s.test?.name || "-"}</td>
-                    <td>{s.question?.title || "-"}</td>
-                    <td className="text-uppercase">{s.language}</td>
+                    <td className="px-4 text-secondary small">{new Date(s.createdAt).toLocaleDateString()}</td>
                     <td>
-                      <span className={`badge ${s.status === "COMPLETED" ? "bg-success" : "bg-warning text-dark"}`}>
+                      <div className="fw-bold text-dark">{s.test?.name || "Deleted Test"}</div>
+                      <div className="small text-muted">{s.question?.title || "Multiple"}</div>
+                    </td>
+                    <td><span className="badge bg-secondary-subtle text-dark border">{s.language}</span></td>
+                    <td>
+                      <span className={`badge rounded-pill ${s.status === 'COMPLETED' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}`}>
                         {s.status}
                       </span>
                     </td>
-                    <td>
-                      <span className={`badge fs-6 ${Number(s.score || 0) >= 60 ? "bg-success" : "bg-danger"}`}>
-                        {s.score ?? 0}%
-                      </span>
-                    </td>
+                    <td className="text-end px-4 fw-bold text-primary">{s.score ?? 0}%</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </div>
-      )}
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ label, value, icon, desc }) {
+  return (
+    <div className="col-md-3">
+      <div className="card border-0 shadow-sm h-100">
+        <div className="card-body">
+          <div className="d-flex justify-content-between mb-3">
+            <div className="rounded-circle bg-light p-2 d-inline-flex">{icon}</div>
+          </div>
+          <h3 className="fw-bold mb-1">{value}</h3>
+          <div className="text-secondary small fw-medium">{label}</div>
+          <div className="text-muted extra-small mt-2" style={{fontSize: '0.75rem'}}>{desc}</div>
+        </div>
+      </div>
     </div>
   );
 }

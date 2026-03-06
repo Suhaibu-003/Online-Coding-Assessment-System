@@ -91,3 +91,80 @@ body {
 .btn-gradient:hover {
   opacity: 0.9;
 }
+:root{
+  --p: #4f46e5;      /* primary indigo */
+  --p2:#4338ca;
+  --bg:#f8fafc;      /* light background */
+  --card:#ffffff;
+  --text:#0f172a;    /* slate-900 */
+  --muted:#64748b;   /* slate-500 */
+  --border:#e2e8f0;  /* slate-200 */
+}
+
+body{
+  background: var(--bg);
+  color: var(--text);
+}
+
+.card{
+  border: 1px solid var(--border) !important;
+  border-radius: 14px !important;
+}
+
+.btn-primary{
+  background: var(--p) !important;
+  border-color: var(--p) !important;
+}
+.btn-primary:hover{
+  background: var(--p2) !important;
+  border-color: var(--p2) !important;
+}
+
+.badge-soft{
+  background: rgba(79,70,229,0.12);
+  color: var(--p);
+  border: 1px solid rgba(79,70,229,0.20);
+}
+
+.text-muted{
+  color: var(--muted) !important;
+}
+
+/* subtle hover only */
+.hover-card:hover{
+  box-shadow: 0 8px 30px rgba(15,23,42,0.06);
+  transform: translateY(-2px);
+  transition: 0.2s ease;
+}
+
+/* Smooth hover effects for cards */
+.transition-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.transition-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+}
+
+/* Subtitle badges */
+.bg-success-subtle { background-color: #e6fcf5; color: #0ca678; }
+.bg-warning-subtle { background-color: #fff9db; color: #f08c00; }
+.bg-primary-subtle { background-color: #e7f5ff; color: #228be6; }
+
+/* Custom utility */
+.extra-small { font-size: 0.8rem; }
+.btn-white { background: white; color: #374151; }
+.btn-white:hover { background: #f9fafb; }
+.extra-small { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; }
+.tracking-wider { letter-spacing: 0.1em; }
+.navbar { min-height: 60px; }
+
+/* Thin Scrollbars for the 'Pro' look */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #444; }
+
+/* Code styles */
+code { background: #1a1a1a; padding: 2px 5px; border-radius: 4px; }
