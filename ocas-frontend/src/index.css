@@ -168,3 +168,8 @@ body{
 
 /* Code styles */
 code { background: #1a1a1a; padding: 2px 5px; border-radius: 4px; }
+body {
+  margin: 0;
+  font-family: "Inter", "Segoe UI", sans-serif;
+  background-color: #f8f9fa;
+}
