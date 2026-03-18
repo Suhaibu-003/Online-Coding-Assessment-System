@@ -9,8 +9,9 @@ export default function Navbar() {
   const role = localStorage.getItem("role");
   const user = JSON.parse(localStorage.getItem("user") || "null");
 
-  // Hide navbar on login/register pages
-  const hide = location.pathname === "/login" || location.pathname === "/register";
+  // Hide navbar on login/register
+  const hide =
+    location.pathname === "/login" || location.pathname === "/register";
   if (hide) return null;
 
   // Auto logout if token expired
@@ -27,42 +28,56 @@ export default function Navbar() {
 
   const homeLink = role === "admin" ? "/admin" : "/candidate";
 
+  const username = user?.name?.split(" ")[0] || "User";
+
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+    <nav className="navbar navbar-expand-lg bg-white shadow-sm sticky-top border-bottom">
       <div className="container">
-        <Link className="navbar-brand fw-bold" to={homeLink}>
-          CodeIntel Platform
+        {/* Logo */}
+        <Link className="navbar-brand fw-bold text-primary" to={homeLink}>
+          CodeBase
         </Link>
 
-        <div className="d-flex align-items-center gap-2">
+        {/* Right Side */}
+        <div className="d-flex align-items-center gap-3">
+          
+          {/* Candidate Only */}
           {role === "candidate" && (
-            <Link to="/attempts" className="btn btn-outline-light btn-sm">
+            <Link to="/attempts" className="btn btn-outline-primary btn-sm rounded-3">
               My Attempts
             </Link>
           )}
 
-          {/* Profile Dropdown */}
+          {/* Profile */}
           <div className="dropdown">
             <button
-              className="btn btn-outline-light btn-sm dropdown-toggle"
+              className="btn d-flex align-items-center gap-2 px-3 py-1 rounded-3 border"
               data-bs-toggle="dropdown"
             >
-              {user?.name || "Profile"}{" "}
-              <span className="badge text-bg-secondary ms-1">{role}</span>
+              {/* Avatar Circle */}
+              <div
+                className="d-flex align-items-center justify-content-center rounded-circle bg-primary text-white"
+                style={{ width: "32px", height: "32px", fontSize: "14px" }}
+              >
+                {username.charAt(0).toUpperCase()}
+              </div>
+
+              {/* Name */}
+              <span className="fw-semibold">{username}</span>
             </button>
 
-            <ul className="dropdown-menu dropdown-menu-end">
-              <li className="dropdown-item-text">
+            <ul className="dropdown-menu dropdown-menu-end shadow-sm rounded-3">
+              <li className="px-3 py-2">
                 <div className="fw-semibold">{user?.name || "-"}</div>
                 <div className="small text-muted">{user?.email || "-"}</div>
               </li>
+
               <li><hr className="dropdown-divider" /></li>
 
-              {/* Hide admin link for candidate */}
               {role === "admin" && (
                 <li>
                   <Link className="dropdown-item" to="/admin">
-                    Admin Dashboard
+                    Dashboard
                   </Link>
                 </li>
               )}
@@ -70,13 +85,16 @@ export default function Navbar() {
               {role === "candidate" && (
                 <li>
                   <Link className="dropdown-item" to="/candidate">
-                    Candidate Dashboard
+                    Dashboard
                   </Link>
                 </li>
               )}
 
               <li>
-                <button className="dropdown-item text-danger" onClick={logout}>
+                <button
+                  className="dropdown-item text-danger"
+                  onClick={logout}
+                >
                   Logout
                 </button>
               </li>
