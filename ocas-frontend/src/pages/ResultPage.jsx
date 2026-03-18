@@ -1,104 +1,195 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, RotateCcw, PartyPopper, Target, Timer, HardDrive } from "lucide-react";
+import { LayoutDashboard, RotateCcw, CheckCircle2, XCircle } from "lucide-react";
 import ScoreRing from "../components/ScoreRing";
 
 export default function ResultPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
 
-  if (!state) return <div className="p-5 text-center">No data found.</div>;
+  if (!state) {
+    return (
+      <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
+        <div className="card border-0 shadow-sm rounded-4 p-4 text-center">
+          <h4 className="fw-bold mb-2">No result data found</h4>
+          <p className="text-muted mb-3">Result details are not available.</p>
+          <button className="btn btn-primary rounded-3" onClick={() => navigate("/candidate")}>
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const score = state.score ?? 0;
+  const results = Array.isArray(state.results) ? state.results : [];
+  const passedCases = state.passedCases ?? results.filter((r) => r?.passed).length;
+  const totalCases = state.totalCases ?? results.length;
   const isPassed = score >= 60;
 
-  // Dynamic colors based on success
-  const themeColor = isPassed ? "#10b981" : "#ef4444";
-  const bgGradient = isPassed 
-    ? "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)" 
-    : "linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)";
-
   return (
-    <div className="min-vh-100 py-5" style={{ background: bgGradient }}>
+    <div
+      className="min-vh-100 py-5"
+      style={{ background: "linear-gradient(135deg, #f8f9fa, #eef2f7)" }}
+    >
       <div className="container" style={{ maxWidth: "900px" }}>
-        
-        {/* Main Glass Card */}
-        <div className="card border-0 shadow-lg rounded-5 overflow-hidden bg-white bg-opacity-75 backdrop-blur">
+        {/* Top Summary Card */}
+        <div className="card border-0 shadow-sm rounded-4 mb-4">
           <div className="card-body p-4 p-md-5">
-            
-            {/* Header Section */}
-            <div className="text-center mb-5">
-              <div className="mb-3 d-inline-block p-3 rounded-circle bg-white shadow-sm">
-                <PartyPopper size={40} color={themeColor} />
-              </div>
-              <h1 className="fw-black display-6 mb-1">Assessment Complete!</h1>
-              <p className="text-muted">Submission ID: {state.submissionId?.substring(0, 8)}</p>
+            <div className="text-center mb-4">
+              <h2 className="fw-bold mb-2">Assessment Result</h2>
+              <p className="text-muted mb-0">
+                Submission ID: {state.submissionId?.substring(0, 8) || "N/A"}
+              </p>
             </div>
 
-            {/* Score Display Row */}
-            <div className="row g-4 align-items-center mb-5">
-              <div className="col-md-6 text-center border-md-end">
+            <div className="row align-items-center g-4 mb-4">
+              <div className="col-md-5 text-center">
                 <div className="d-flex justify-content-center mb-3">
-                  <ScoreRing score={score} size={160} strokeWidth={10} color={themeColor} />
+                  <ScoreRing
+                    score={score}
+                    size={140}
+                    strokeWidth={10}
+                    color={isPassed ? "#198754" : "#dc3545"}
+                  />
                 </div>
-                <h2 className="fw-bold" style={{ color: themeColor }}>{isPassed ? "Great Job!" : "Keep Practicing!"}</h2>
+                <h4 className={`fw-bold ${isPassed ? "text-success" : "text-danger"}`}>
+                  {isPassed ? "Passed" : "Needs Improvement"}
+                </h4>
               </div>
-              
-              <div className="col-md-6 px-md-5">
-                <div className="d-flex flex-column gap-3">
-                  <StatRow icon={<Target size={20}/>} label="Accuracy" value={`${score}%`} color="primary" />
-                  <StatRow icon={<Timer size={20}/>} label="Test Cases" value={`${state.passedCases} / ${state.totalCases}`} color="success" />
-                  <StatRow icon={<HardDrive size={20}/>} label="Status" value={isPassed ? "PASSED" : "RETRY"} color={isPassed ? "success" : "danger"} />
+
+              <div className="col-md-7">
+                <div className="row g-3">
+                  <div className="col-sm-4">
+                    <div className="card border-0 bg-light rounded-4 h-100">
+                      <div className="card-body text-center">
+                        <div className="text-muted small">Score</div>
+                        <div className="fw-bold fs-4">{score}%</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="col-sm-4">
+                    <div className="card border-0 bg-light rounded-4 h-100">
+                      <div className="card-body text-center">
+                        <div className="text-muted small">Passed Cases</div>
+                        <div className="fw-bold fs-4">
+                          {passedCases}/{totalCases}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="col-sm-4">
+                    <div className="card border-0 bg-light rounded-4 h-100">
+                      <div className="card-body text-center">
+                        <div className="text-muted small">Status</div>
+                        <div className={`fw-bold fs-5 ${isPassed ? "text-success" : "text-danger"}`}>
+                          {isPassed ? "PASSED" : "RETRY"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="d-flex flex-column flex-sm-row gap-3 justify-content-center">
-              <button 
-                className="btn btn-lg rounded-pill px-5 shadow-sm d-flex align-items-center justify-content-center gap-2"
-                style={{ backgroundColor: themeColor, color: 'white', border: 'none' }}
+              <button
+                className="btn btn-primary rounded-3 px-4 d-flex align-items-center justify-content-center gap-2"
                 onClick={() => navigate("/candidate")}
               >
-                <RotateCcw size={20} /> Try Another
+                <RotateCcw size={18} />
+                Try Another
               </button>
-              <button 
-                className="btn btn-lg btn-white border-0 shadow-sm rounded-pill px-5 d-flex align-items-center justify-content-center gap-2"
+
+              <button
+                className="btn btn-outline-primary rounded-3 px-4 d-flex align-items-center justify-content-center gap-2"
                 onClick={() => navigate("/candidate")}
               >
-                <LayoutDashboard size={20} /> Dashboard
+                <LayoutDashboard size={18} />
+                Dashboard
               </button>
             </div>
-
           </div>
         </div>
 
-        {/* Simplified Testcase List */}
-        <div className="mt-4">
-          <h5 className="fw-bold mb-3 px-2">Detailed Results</h5>
-          <div className="d-flex flex-column gap-2">
-            {(state.results || []).map((r, idx) => (
-              <div key={idx} className="bg-white rounded-4 p-3 shadow-sm d-flex align-items-center border-start border-4" style={{ borderColor: r.passed ? '#10b981' : '#ef4444' }}>
-                <div className="me-auto fw-bold">Test Case {idx + 1}</div>
-                <div className={`badge rounded-pill ${r.passed ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}`}>
-                  {r.passed ? "Passed" : "Failed"}
-                </div>
+        {/* Detailed Results */}
+        <div className="card border-0 shadow-sm rounded-4">
+          <div className="card-body p-4">
+            <h5 className="fw-bold mb-3">Detailed Results</h5>
+
+            {results.length === 0 ? (
+              <div className="text-muted">No testcase details available.</div>
+            ) : (
+              <div className="d-flex flex-column gap-3">
+                {results.map((r, idx) => {
+                  if (!r) return null;
+
+                  return (
+                    <div
+                      key={idx}
+                      className="card border-0 bg-light rounded-4"
+                      style={{
+                        borderLeft: `4px solid ${r.passed ? "#198754" : "#dc3545"}`
+                      }}
+                    >
+                      <div className="card-body">
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                          <div className="fw-bold d-flex align-items-center gap-2">
+                            {r.passed ? (
+                              <CheckCircle2 size={18} className="text-success" />
+                            ) : (
+                              <XCircle size={18} className="text-danger" />
+                            )}
+                            Test Case {idx + 1}
+                          </div>
+
+                          <span
+                            className={`badge rounded-pill px-3 py-2 ${
+                              r.passed
+                                ? "bg-success-subtle text-success"
+                                : "bg-danger-subtle text-danger"
+                            }`}
+                          >
+                            {r.passed ? "Passed" : "Failed"}
+                          </span>
+                        </div>
+
+                        <div className="row g-3">
+                          <div className="col-md-4">
+                            <div className="fw-semibold mb-1 text-muted small">Input</div>
+                            <pre className="bg-white p-3 rounded-3 mb-0 small">
+                              {r.input || "(empty)"}
+                            </pre>
+                          </div>
+
+                          <div className="col-md-4">
+                            <div className="fw-semibold mb-1 text-muted small">Expected</div>
+                            <pre className="bg-white p-3 rounded-3 mb-0 small">
+                              {r.expectedOutput || "(empty)"}
+                            </pre>
+                          </div>
+
+                          <div className="col-md-4">
+                            <div className="fw-semibold mb-1 text-muted small">Your Output</div>
+                            <pre className="bg-white p-3 rounded-3 mb-0 small">
+                              {r.actualOutput || "(empty)"}
+                            </pre>
+                          </div>
+                        </div>
+
+                        <div className="small text-muted mt-3 text-end">
+                          Time: {r.time ?? "-"}s • Memory: {r.memory ?? "-"} KB
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+            )}
           </div>
         </div>
-
       </div>
-    </div>
-  );
-}
-
-// Simple Helper Component
-function StatRow({ icon, label, value, color }) {
-  return (
-    <div className="d-flex align-items-center gap-3 p-3 rounded-4 bg-white shadow-sm">
-      <div className={`text-${color}`}>{icon}</div>
-      <div className="flex-grow-1 text-muted small fw-bold text-uppercase">{label}</div>
-      <div className="fw-bold fs-5">{value}</div>
     </div>
   );
 }
