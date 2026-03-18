@@ -78,7 +78,7 @@ export default function Login() {
             minHeight: "600px",
           }}
         >
-          <h1 className="fw-bold mb-3"> Coding Assessment Platform</h1>
+          <h1 className="fw-bold mb-3"> Coding Assessment Platform </h1>
           <p className="mb-4 text-white-50" style={{ lineHeight: "1.8" }}>
             Conduct coding tests, evaluate candidates, and manage assessments
             through one professional platform.
