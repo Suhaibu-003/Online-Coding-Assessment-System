@@ -72,10 +72,10 @@ export default function TestPage() {
     })();
   }, [id]);
 
-  const supported = useMemo(
-    () => selectedQ?.supportedLanguages || ["c", "cpp", "java", "python"],
-    [selectedQ]
-  );
+  const supported = useMemo(() => {
+  const langs = selectedQ?.supportedLanguages || ["c", "cpp", "java", "python"];
+  return langs.filter((l) => l !== "javascript");
+}, [selectedQ]);
 
   useEffect(() => {
     if (!selectedQ) return;

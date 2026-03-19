@@ -16,7 +16,7 @@ const questionSchema = new mongoose.Schema(
     difficulty: { type: String, enum: ["easy", "medium", "hard"], default: "easy" },
     supportedLanguages: {
       type: [String],
-      default: ["c", "cpp", "java", "python", "javascript"]
+      default: ["c", "cpp", "java", "python"]
     },
     testCases: { type: [testCaseSchema], default: [] }
   },
