@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Plus,
   Search,
@@ -9,7 +9,8 @@ import {
   Users,
   Trophy,
   CheckCircle2,
-  ClipboardList
+  ClipboardList,
+  Settings
 } from "lucide-react";
 import { getPublishedTestsApi, testSubmissionsApi } from "../services/api";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -32,6 +33,7 @@ const toCSV = (rows) => {
 };
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [tests, setTests] = useState([]);
   const [selectedTestId, setSelectedTestId] = useState("");
   const [subs, setSubs] = useState([]);
@@ -303,6 +305,16 @@ export default function AdminDashboard() {
               <div className="col-lg-4">
                 <label className="form-label fw-semibold">Actions</label>
                 <div className="d-flex flex-wrap gap-2">
+                  <button
+                    className="btn btn-outline-primary d-flex align-items-center gap-2 rounded-3"
+                    onClick={() => navigate(`/admin/schedule-test/${selectedTestId}`)}
+                    disabled={!selectedTestId}
+                    title="Schedule test for specific users"
+                  >
+                    <Users size={16} />
+                    Schedule
+                  </button>
+
                   <button
                     className="btn btn-outline-secondary d-flex align-items-center gap-2 rounded-3"
                     onClick={copyTestId}

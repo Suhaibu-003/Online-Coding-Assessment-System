@@ -4,6 +4,7 @@ import Register from "../pages/Register.jsx";
 import CandidateDashboard from "../pages/CandidateDashboard.jsx";
 import AdminDashboard from "../pages/AdminDashboard.jsx";
 import CreateTest from "../pages/CreateTest.jsx";
+import TestScheduling from "../pages/TestScheduling.jsx";
 import TestPage from "../pages/TestPage.jsx";
 import ResultPage from "../pages/ResultPage.jsx";
 import MyAttempts from "../pages/MyAttempts.jsx";
@@ -66,6 +67,14 @@ export default function AppRoutes() {
         element={
           <RequireAdmin>
             <CreateTest />
+          </RequireAdmin>
+        }
+      />
+      <Route
+        path="/admin/schedule-test/:testId"
+        element={
+          <RequireAdmin>
+            <TestScheduling />
           </RequireAdmin>
         }
       />

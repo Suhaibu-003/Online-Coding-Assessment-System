@@ -213,7 +213,7 @@ export default function CandidateDashboard() {
                         <h5 className="fw-bold mb-1">{t.name}</h5>
                         <div className="text-muted small d-flex align-items-center gap-1">
                           <FileText size={14} />
-                          {t.questions?.length || 0} coding challenges
+                          {t.questionCount ?? t.questions?.length ?? 0} coding challenges
                         </div>
                       </div>
 

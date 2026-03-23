@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import {
   ChevronLeft,
@@ -9,7 +9,7 @@ import {
   Cpu,
   Layers
 } from "lucide-react";
-import { getTestByIdApi, runCodeApi, submitCodeApi } from "../services/api";
+import { getTestByIdApi, runCodeApi, submitCodeApi, mySubmissionsApi } from "../services/api";
 import LoadingSpinner from "../components/LoadingSpinner";
 import CodeEditor from "../components/CodeEditor";
 
@@ -63,63 +63,17 @@ export default function TestPage() {
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("console");
   const [copiedMsg, setCopiedMsg] = useState("");
+  const [hasAttempted, setHasAttempted] = useState(false);
+  const [attemptMessage, setAttemptMessage] = useState("");
 
-  useEffect(() => {
-    (async () => {
-      const res = await getTestByIdApi(id);
-      setTest(res.data);
-      setSelectedQ(res.data?.questions?.[0] || null);
-    })();
-  }, [id]);
+  const [timeLeft, setTimeLeft] = useState(0);
 
-  const supported = useMemo(() => {
-  const langs = selectedQ?.supportedLanguages || ["c", "cpp", "java", "python"];
-  return langs.filter((l) => l !== "javascript");
-}, [selectedQ]);
-
-  useEffect(() => {
-    if (!selectedQ) return;
-
-    if (!supported.includes(language)) {
-      const next = supported[0] || "python";
-      setLanguage(next);
-      setCode(templates[next] || "");
+  const handleSubmit = useCallback(async () => {
+    if (hasAttempted) {
+      alert("Retakes are not allowed. This test has already been submitted.");
+      return;
     }
 
-    setRunResult(null);
-    setRunText("");
-    setCustomInput("");
-  }, [selectedQ]);
-
-  const visibleCases = useMemo(
-    () => (selectedQ?.testCases || []).filter((t) => !t?.isHidden),
-    [selectedQ]
-  );
-
-  const handleRun = async () => {
-    try {
-      setRunning(true);
-      setRunText("Processing...");
-      const res = await runCodeApi({
-        language,
-        sourceCode: code,
-        customInput: customInput || ""
-      });
-      setRunResult(res.data);
-      setRunText(
-        res.data.stdout ||
-          res.data.stderr ||
-          res.data.compile_output ||
-          "Execution completed (no output)."
-      );
-    } catch (e) {
-      setRunText(e?.response?.data?.message || e.message);
-    } finally {
-      setRunning(false);
-    }
-  };
-
-  const handleSubmit = async () => {
     if (
       !selectedQ?._id ||
       !window.confirm(
@@ -143,6 +97,150 @@ export default function TestPage() {
     } finally {
       setSubmitting(false);
     }
+  }, [selectedQ, language, code, id, navigate, hasAttempted]);
+
+  useEffect(() => {
+    (async () => {
+      const [testRes, submissionsRes] = await Promise.all([
+        getTestByIdApi(id),
+        mySubmissionsApi()
+      ]);
+
+      const previous = submissionsRes.data || [];
+      const attempted = previous.some(
+        (s) =>
+          s.status === "COMPLETED" &&
+          s.test?._id &&
+          s.test._id.toString() === id.toString()
+      );
+      setHasAttempted(attempted);
+
+      if (attempted) {
+        setAttemptMessage(
+          "You have already attempted this test. Retakes are not allowed."
+        );
+      }
+
+      setTest(testRes.data);
+      setSelectedQ(testRes.data?.questions?.[0] || null);
+
+      const questionCount = testRes.data?.questions?.length || 0;
+      const totalSeconds = questionCount * 30 * 60;
+      setTimeLeft(totalSeconds);
+
+      // Try full screen at start, optional for some browsers
+      try {
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        }
+      } catch (e) {
+        console.warn("Fullscreen request blocked", e);
+      }
+    })();
+  }, [id]);
+
+  // Timer countdown
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          alert("Time's up! Your test will be automatically submitted.");
+          handleSubmit();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [timeLeft, handleSubmit]);
+
+  // prevent browser back button
+  useEffect(() => {
+    const handleBack = () => {
+      window.history.pushState(null, "", window.location.href);
+    };
+
+    window.history.pushState(null, "", window.location.href);
+    window.addEventListener("popstate", handleBack);
+
+    return () => {
+      window.removeEventListener("popstate", handleBack);
+    };
+  }, []);
+
+
+  // prevent refresh or tab close
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = "Leaving will end your test.";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+  const formattedTime = () => {
+    const m = Math.floor(timeLeft / 60);
+    const s = timeLeft % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
+  const supported = useMemo(() => {
+    const langs = selectedQ?.supportedLanguages || ["c", "cpp", "java", "python"];
+    return langs.filter((l) => l !== "javascript");
+  }, [selectedQ]);
+
+  useEffect(() => {
+    if (!selectedQ) return;
+
+    if (!supported.includes(language)) {
+      const next = supported[0] || "python";
+      setLanguage(next);
+      setCode(templates[next] || "");
+    }
+
+    setRunResult(null);
+    setRunText("");
+    setCustomInput("");
+  }, [selectedQ, language, supported]);
+
+  const visibleCases = useMemo(
+    () => (selectedQ?.testCases || []).filter((t) => !t?.isHidden),
+    [selectedQ]
+  );
+
+  const handleRun = async () => {
+    if (hasAttempted) {
+      alert("You cannot run code on this test because it is already completed.");
+      return;
+    }
+
+    try {
+      setRunning(true);
+      setRunText("Processing...");
+      const res = await runCodeApi({
+        language,
+        sourceCode: code,
+        customInput: customInput || ""
+      });
+      setRunResult(res.data);
+      setRunText(
+        res.data.stdout ||
+        res.data.stderr ||
+        res.data.compile_output ||
+        "Execution completed (no output)."
+      );
+    } catch (e) {
+      setRunText(e?.response?.data?.message || e.message);
+    } finally {
+      setRunning(false);
+    }
   };
 
   const copyToInput = (value) => {
@@ -158,14 +256,16 @@ export default function TestPage() {
       className="min-vh-100 d-flex flex-column"
       style={{ background: "linear-gradient(135deg, #f8f9fa, #eef2f7)" }}
     >
-      {/* Top Bar */}
       <div className="bg-white border-bottom shadow-sm">
         <div className="container-fluid px-3 px-lg-4 py-3 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
           <div className="d-flex align-items-center gap-3">
-            <Link to="/candidate" className="btn btn-outline-primary rounded-3 d-flex align-items-center gap-2">
+            <button
+              className="btn btn-outline-primary rounded-3 d-flex align-items-center gap-2"
+              onClick={() => alert("You cannot exit once the test has started")}
+            >
               <ChevronLeft size={16} />
               Exit
-            </Link>
+            </button>
 
             <div>
               <h5 className="mb-1 fw-bold">{test.name}</h5>
@@ -175,13 +275,13 @@ export default function TestPage() {
 
           <div className="d-flex flex-wrap align-items-center gap-2">
             <div className="badge bg-light text-dark border px-3 py-2 rounded-pill">
-              Duration: {test.durationMinutes || 0} min
+              Time Left: {formattedTime()}
             </div>
 
             <button
               className="btn btn-outline-primary rounded-3 d-flex align-items-center gap-2"
               onClick={handleRun}
-              disabled={running}
+              disabled={running || hasAttempted}
             >
               <Play size={16} />
               {running ? "Running..." : "Run"}
@@ -190,7 +290,7 @@ export default function TestPage() {
             <button
               className="btn btn-primary rounded-3 d-flex align-items-center gap-2"
               onClick={handleSubmit}
-              disabled={submitting}
+              disabled={submitting || hasAttempted}
             >
               <Send size={16} />
               {submitting ? "Submitting..." : "Submit"}
@@ -199,10 +299,17 @@ export default function TestPage() {
         </div>
       </div>
 
-      {/* Main Layout */}
+      {hasAttempted && (
+        <div className="container-fluid px-3 px-lg-4 py-3">
+          <div className="alert alert-warning text-center">
+            {attemptMessage || "You already attempted this test. You cannot retake it."}
+          </div>
+        </div>
+      )}
+
       <div className="container-fluid px-3 px-lg-4 py-4 flex-grow-1">
         <div className="row g-4 h-100">
-          {/* Left Side */}
+
           <div className="col-lg-4">
             <div className="card border-0 shadow-sm rounded-4 h-100">
               <div className="card-body p-4" style={{ maxHeight: "calc(100vh - 170px)", overflowY: "auto" }}>
@@ -222,10 +329,7 @@ export default function TestPage() {
                   </span>
                 </div>
 
-                <div
-                  className="mb-5 text-dark"
-                  style={{ whiteSpace: "pre-wrap", lineHeight: "1.8" }}
-                >
+                <div className="mb-5 text-dark" style={{ whiteSpace: "pre-wrap", lineHeight: "1.8" }}>
                   {selectedQ?.statement}
                 </div>
 
@@ -269,19 +373,17 @@ export default function TestPage() {
             </div>
           </div>
 
-          {/* Right Side */}
           <div className="col-lg-8">
             <div className="card border-0 shadow-sm rounded-4 h-100 d-flex flex-column">
-              {/* Editor Top Controls */}
+
               <div className="card-header bg-white border-0 border-bottom p-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                 <div className="d-flex flex-wrap gap-2">
                   {test.questions?.map((q, idx) => (
                     <button
                       key={q._id}
                       onClick={() => setSelectedQ(q)}
-                      className={`btn btn-sm rounded-3 ${
-                        selectedQ?._id === q._id ? "btn-primary" : "btn-light border"
-                      }`}
+                      className={`btn btn-sm rounded-3 ${selectedQ?._id === q._id ? "btn-primary" : "btn-light border"
+                        }`}
                     >
                       Q{idx + 1}
                     </button>
@@ -305,7 +407,6 @@ export default function TestPage() {
                 </select>
               </div>
 
-              {/* Editor */}
               <div style={{ height: "430px" }} className="border-bottom">
                 <CodeEditor
                   language={language}
@@ -315,13 +416,11 @@ export default function TestPage() {
                 />
               </div>
 
-              {/* Bottom Panel */}
               <div className="flex-grow-1">
                 <div className="d-flex border-bottom bg-white">
                   <button
-                    className={`btn btn-sm rounded-0 px-4 py-3 ${
-                      activeTab === "console" ? "btn-light border-bottom border-3 border-primary" : "btn-white"
-                    }`}
+                    className={`btn btn-sm rounded-0 px-4 py-3 ${activeTab === "console" ? "btn-light border-bottom border-3 border-primary" : "btn-white"
+                      }`}
                     onClick={() => setActiveTab("console")}
                   >
                     <Terminal size={15} className="me-2" />
@@ -357,11 +456,10 @@ export default function TestPage() {
                     </div>
 
                     <pre
-                      className={`p-3 rounded-3 small mb-0 ${
-                        runResult?.status?.id === 3
-                          ? "bg-white text-success"
-                          : "bg-white text-dark"
-                      }`}
+                      className={`p-3 rounded-3 small mb-0 ${runResult?.status?.id === 3
+                        ? "bg-white text-success"
+                        : "bg-white text-dark"
+                        }`}
                       style={{
                         minHeight: "160px",
                         whiteSpace: "pre-wrap"
@@ -372,8 +470,10 @@ export default function TestPage() {
                   </div>
                 </div>
               </div>
+
             </div>
           </div>
+
         </div>
       </div>
     </div>

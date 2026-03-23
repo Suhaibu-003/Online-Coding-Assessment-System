@@ -38,6 +38,14 @@ export const addQuestionApi = (testId, data) =>
 export const publishTestApi = (testId) =>
   api.patch(`/tests/${testId}/publish`);
 
+// Test scheduling/assignment endpoints
+export const getCandidateUsersApi = () =>
+  api.get("/tests/admin/users/candidates");
+export const assignTestToUsersApi = (testId, data) =>
+  api.patch(`/tests/${testId}/assign-users`, data);
+export const getTestWithAssignmentsApi = (testId) =>
+  api.get(`/tests/admin/${testId}/assignments`);
+
 /* ==========================
    SUBMISSIONS
 ========================== */
