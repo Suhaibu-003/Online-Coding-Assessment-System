@@ -14,6 +14,8 @@ import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 
 const app = express();
 
+const PORT = process.env.PORT || 5000;
+
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(express.json());
 app.use("/api/auth", authRoutes);
@@ -28,5 +30,19 @@ connectDB();
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`Port ${PORT} in use, retrying in 1s...`);
+    setTimeout(() => {
+      server.close(() => {
+        app.listen(PORT, () => console.log(`Server restarted on port ${PORT}`));
+      });
+    }, 1000);
+  } else {
+    throw err;
+  }
+});

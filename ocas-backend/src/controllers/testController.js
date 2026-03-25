@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Test from "../models/Test.js";
 import Question from "../models/Question.js";
 import User from "../models/User.js";
@@ -45,9 +46,10 @@ export const addQuestionToTest = async (req, res) => {
 export const publishTest = async (req, res) => {
   const { testId } = req.params;
 
-  const test = await Test.findById(testId);
+  const test = await Test.findById(testId).populate("questions");
   if (!test) return res.status(404).json({ message: "Test not found" });
 
+  test.durationMinutes = test.questions.length * 30;
   test.isPublished = true;
   await test.save();
 
@@ -76,13 +78,22 @@ export const assignTestToUsers = async (req, res) => {
     const test = await Test.findById(testId);
     if (!test) return res.status(404).json({ message: "Test not found" });
 
-    // Replace assigned users with new list
-    test.assignedUsers = Array.isArray(userIds) ? userIds : [];
+    if (!test.questions || test.questions.length === 0) {
+      return res.status(400).json({ message: "Add at least one question before assigning test" });
+    }
 
-    // Update the public/private status only when provided
+    // Replace assigned users with new list (if invalid IDs exist, ignore them)
+    test.assignedUsers = Array.isArray(userIds)
+      ? userIds.filter(Boolean)
+      : [];
+
+    // Update the public/private status
     if (typeof isPublicTest === "boolean") {
       test.isPublicTest = isPublicTest;
     }
+
+    // Automatically publish the test when assigning to users
+    test.isPublished = true;
 
     await test.save();
 
@@ -93,7 +104,7 @@ export const assignTestToUsers = async (req, res) => {
     ]);
 
     res.json({ 
-      message: "Test assigned successfully", 
+      message: "Test assigned and published successfully", 
       test 
     });
   } catch (error) {
@@ -121,13 +132,12 @@ export const getTestWithAssignments = async (req, res) => {
 // Candidate: list published tests (only those public OR assigned to them)
 export const getPublishedTests = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = new mongoose.Types.ObjectId(req.user._id);
 
     const tests = await Test.find({
-      isPublished: true,
       $or: [
-        { isPublicTest: true },
-        { assignedUsers: userId }
+        { isPublished: true, isPublicTest: true },
+        { assignedUsers: { $in: [userId] } }
       ]
     })
       .select("_id name description durationMinutes createdAt isPublicTest questions")
@@ -160,9 +170,11 @@ export const getTestById = async (req, res) => {
   // Check if candidate is allowed to access this test
   // If it's a private test, user must be in assignedUsers array
   if (!test.isPublicTest) {
-    const isAssigned = test.assignedUsers.some(
+    const assignedUsers = Array.isArray(test.assignedUsers) ? test.assignedUsers : [];
+    const isAssigned = assignedUsers.some(
       (id) => id.toString() === userId.toString()
     );
+
     if (!isAssigned) {
       return res.status(403).json({ message: "You don't have access to this test" });
     }

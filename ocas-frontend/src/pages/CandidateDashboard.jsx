@@ -61,8 +61,17 @@ export default function CandidateDashboard() {
   }, [attempts]);
 
   const filteredTests = useMemo(() => {
+    // Get IDs of completed tests
+    const completedTestIds = new Set(
+      attempts
+        .filter((a) => a.status === "COMPLETED")
+        .map((a) => a.test?._id)
+        .filter(Boolean)
+    );
+
     let arr = tests.filter((t) =>
-      (t.name || "").toLowerCase().includes(q.toLowerCase().trim())
+      (t.name || "").toLowerCase().includes(q.toLowerCase().trim()) &&
+      !completedTestIds.has(t._id)
     );
 
     if (sort === "duration") {
@@ -71,12 +80,12 @@ export default function CandidateDashboard() {
 
     if (sort === "questions") {
       arr.sort(
-        (a, b) => (b.questions?.length || 0) - (a.questions?.length || 0)
+        (a, b) => (b.questionCount || 0) - (a.questionCount || 0)
       );
     }
 
     return arr;
-  }, [tests, q, sort]);
+  }, [tests, q, sort, attempts]);
 
   const handleCopy = async (id) => {
     await navigator.clipboard.writeText(id);

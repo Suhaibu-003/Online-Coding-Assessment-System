@@ -37,15 +37,11 @@ const totalCases = allResults.length;
   const isPassed = score >= 60;
 
   return (
-    <div
-      className="min-vh-100 py-5"
-      style={{ background: "linear-gradient(135deg, #f8f9fa, #eef2f7)" }}
-    >
-      <div className="container" style={{ maxWidth: "900px" }}>
-        
+    <div className="container py-5" style={{ maxWidth: "900px" }}>
+      <div>
         {/* Top Summary */}
-        <div className="card border-0 shadow-sm rounded-4 mb-4">
-          <div className="card-body p-4 p-md-5">
+        <div className="card mb-4">
+          <div className="card-body p-4">
             <div className="text-center mb-4">
               <h2 className="fw-bold mb-2">Assessment Result</h2>
               <p className="text-muted mb-0">
@@ -55,11 +51,11 @@ const totalCases = allResults.length;
 
             <div className="row align-items-center g-4 mb-4">
               <div className="col-md-5 text-center">
-                <div className="d-flex justify-content-center mb-3">
+                <div className="mb-3">
                   <ScoreRing
                     score={score}
-                    size={140}
-                    strokeWidth={10}
+                    size={120}
+                    strokeWidth={8}
                     color={isPassed ? "#198754" : "#dc3545"}
                   />
                 </div>
@@ -69,7 +65,7 @@ const totalCases = allResults.length;
                 </h4>
 
                 <div className="mt-2">
-                  <div className="progress" style={{ height: "8px" }}>
+                  <div className="progress" style={{ height: "6px" }}>
                     <div
                       className={`progress-bar ${isPassed ? "bg-success" : "bg-danger"}`}
                       role="progressbar"
@@ -79,14 +75,14 @@ const totalCases = allResults.length;
                       aria-valuemax="100"
                     />
                   </div>
-                  <small className="text-muted">Score progress</small>
+                  <small className="text-muted">Score: {score}%</small>
                 </div>
               </div>
 
               <div className="col-md-7">
                 <div className="row g-3">
                   <div className="col-sm-4">
-                    <div className="card border-0 bg-light rounded-4 h-100">
+                    <div className="card h-100">
                       <div className="card-body text-center">
                         <div className="text-muted small">Score</div>
                         <div className="fw-bold fs-4">{score}%</div>
@@ -95,7 +91,7 @@ const totalCases = allResults.length;
                   </div>
 
                   <div className="col-sm-4">
-                    <div className="card border-0 bg-light rounded-4 h-100">
+                    <div className="card h-100">
                       <div className="card-body text-center">
                         <div className="text-muted small">Passed Cases</div>
                         <div className="fw-bold fs-4">
@@ -106,13 +102,11 @@ const totalCases = allResults.length;
                   </div>
 
                   <div className="col-sm-4">
-                    <div className="card border-0 bg-light rounded-4 h-100">
+                    <div className="card h-100">
                       <div className="card-body text-center">
                         <div className="text-muted small">Status</div>
                         <div
-                          className={`fw-bold fs-5 ${
-                            isPassed ? "text-success" : "text-danger"
-                          }`}
+                          className={`fw-bold fs-5 ${isPassed ? "text-success" : "text-danger"}`}
                         >
                           {isPassed ? "PASSED" : "RETRY"}
                         </div>
@@ -123,31 +117,27 @@ const totalCases = allResults.length;
               </div>
             </div>
 
-
             {/* Buttons */}
             <div className="d-flex flex-column flex-sm-row gap-3 justify-content-center">
               <button
-                className="btn btn-primary rounded-3 px-4 d-flex align-items-center gap-2"
+                className="btn btn-primary"
                 onClick={() => navigate("/candidate")}
               >
-                <RotateCcw size={18} />
-                Try Another
+                Try Another Test
               </button>
 
               <button
-                className="btn btn-outline-primary rounded-3 px-4 d-flex align-items-center gap-2"
+                className="btn btn-outline-secondary"
                 onClick={() => navigate("/candidate")}
               >
-                <LayoutDashboard size={18} />
-                Dashboard
+                Back to Dashboard
               </button>
             </div>
           </div>
         </div>
 
-
         {/* Detailed Results */}
-        <div className="card border-0 shadow-sm rounded-4">
+        <div className="card">
           <div className="card-body p-4">
             <h5 className="fw-bold mb-3">Detailed Results</h5>
 
@@ -158,7 +148,7 @@ const totalCases = allResults.length;
                 {results.map((r, idx) => (
                   <div
                     key={idx}
-                    className="card border-0 bg-light rounded-4"
+                    className="card"
                     style={{
                       borderLeft: `4px solid ${
                         r.passed ? "#198754" : "#dc3545"
@@ -178,23 +168,22 @@ const totalCases = allResults.length;
                         </div>
 
                         <span
-                          className={`badge rounded-pill px-3 py-2 ${
+                          className={`badge ${
                             r.passed
-                              ? "bg-success-subtle text-success"
-                              : "bg-danger-subtle text-danger"
+                              ? "bg-success"
+                              : "bg-danger"
                           }`}
                         >
                           {r.passed ? "Passed" : "Failed"}
                         </span>
                       </div>
 
-
                       <div className="row g-3">
                         <div className="col-md-4">
                           <div className="fw-semibold mb-1 text-muted small">
                             Input
                           </div>
-                          <pre className="bg-white p-3 rounded-3 mb-0 small">
+                          <pre className="bg-light p-2 small">
                             {r.input || "(empty)"}
                           </pre>
                         </div>
@@ -203,7 +192,7 @@ const totalCases = allResults.length;
                           <div className="fw-semibold mb-1 text-muted small">
                             Expected
                           </div>
-                          <pre className="bg-white p-3 rounded-3 mb-0 small">
+                          <pre className="bg-light p-2 small">
                             {r.expectedOutput || "(empty)"}
                           </pre>
                         </div>
@@ -212,13 +201,13 @@ const totalCases = allResults.length;
                           <div className="fw-semibold mb-1 text-muted small">
                             Your Output
                           </div>
-                          <pre className="bg-white p-3 rounded-3 mb-0 small">
+                          <pre className="bg-light p-2 small">
                             {r.actualOutput || "(empty)"}
                           </pre>
                         </div>
                       </div>
 
-                      <div className="small text-muted mt-3 text-end">
+                      <div className="small text-muted mt-3">
                         Time: {r.time ?? "-"}s • Memory: {r.memory ?? "-"} KB
                       </div>
 
@@ -230,7 +219,6 @@ const totalCases = allResults.length;
 
           </div>
         </div>
-
       </div>
     </div>
   );
