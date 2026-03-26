@@ -1,10 +1,75 @@
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, RotateCcw, CheckCircle2, XCircle } from "lucide-react";
 import ScoreRing from "../components/ScoreRing";
+import { mySubmissionsApi } from "../services/api";
 
 export default function ResultPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
+
+  const [allSubmissions, setAllSubmissions] = useState([]);
+  const [computedScore, setComputedScore] = useState(state?.score ?? 0);
+
+  const score = state?.score ?? 0;
+
+  useEffect(() => {
+    if (!state?.testId) return;
+
+    (async () => {
+      try {
+        const res = await mySubmissionsApi();
+        const subsForTest = (res.data || []).filter(
+          (s) => s.test?._id?.toString() === state.testId?.toString() && s.status === "COMPLETED"
+        );
+
+        setAllSubmissions(subsForTest);
+
+        const totalQuestions = state.testQuestionCount || subsForTest.length;
+
+        const latestPerQuestion = {}; // questionId -> score
+        for (const sub of subsForTest) {
+          if (!sub.question?._id) continue;
+          const qid = sub.question._id.toString();
+          const last = latestPerQuestion[qid];
+          const subTime = new Date(sub.createdAt || 0).getTime();
+          if (!last || subTime > last.time) {
+            latestPerQuestion[qid] = {
+              score: sub.score ?? 0,
+              time: subTime
+            };
+          }
+        }
+
+        const obtainedQuestionScore = Object.values(latestPerQuestion).reduce(
+          (sum, q) => sum + q.score,
+          0
+        );
+
+        let totalTestScore = 0;
+        if (totalQuestions > 0) {
+          totalTestScore = Math.round(obtainedQuestionScore / totalQuestions);
+        }
+
+        setComputedScore(totalTestScore);
+      } catch (e) {
+        console.error("Could not compute test score:", e);
+      }
+    })();
+  }, [state?.testId, state?.testQuestionCount, score]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      navigate("/candidate", { replace: true });
+    };
+
+    window.history.pushState(null, null, window.location.href);
+    window.addEventListener("popstate", onPopState);
+
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+    };
+  }, [navigate]);
 
   if (!state) {
     return (
@@ -23,18 +88,17 @@ export default function ResultPage() {
     );
   }
 
-  const score = state.score ?? 0;
-
   // All results from backend
   const allResults = Array.isArray(state.results) ? state.results : [];
 
-  // Show ONLY visible testcases
-  const results = allResults.filter((r) => !r?.isHidden);
+  // Include hidden cases (explicitly requested)
+  const results = allResults;
 
-const passedCases = allResults.filter((r) => r?.passed).length;
-const totalCases = allResults.length;
+  const passedCases = allResults.filter((r) => r?.passed).length;
+  const totalCases = allResults.length;
+  const usedScore = computedScore;
 
-  const isPassed = score >= 60;
+  const isPassed = usedScore >= 60;
 
   return (
     <div className="container py-5" style={{ maxWidth: "900px" }}>
@@ -85,7 +149,10 @@ const totalCases = allResults.length;
                     <div className="card h-100">
                       <div className="card-body text-center">
                         <div className="text-muted small">Score</div>
-                        <div className="fw-bold fs-4">{score}%</div>
+                        <div className="fw-bold fs-4">{usedScore}%</div>
+                        {usedScore !== score && (
+                          <div className="small text-muted">(Aggregated from {allSubmissions.length} submissions)</div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -93,10 +160,9 @@ const totalCases = allResults.length;
                   <div className="col-sm-4">
                     <div className="card h-100">
                       <div className="card-body text-center">
-                        <div className="text-muted small">Passed Cases</div>
-                        <div className="fw-bold fs-4">
-                          {passedCases}/{totalCases}
-                        </div>
+                        <div className="text-muted small">Results</div>
+                        <div className="fw-bold fs-4">{passedCases} / {totalCases} Passed</div>
+                        <div className="small text-muted">(includes hidden cases)</div>
                       </div>
                     </div>
                   </div>
@@ -178,37 +244,15 @@ const totalCases = allResults.length;
                         </span>
                       </div>
 
-                      <div className="row g-3">
-                        <div className="col-md-4">
-                          <div className="fw-semibold mb-1 text-muted small">
-                            Input
-                          </div>
-                          <pre className="bg-light p-2 small">
-                            {r.input || "(empty)"}
-                          </pre>
+                      <div className="row g-3 align-items-center">
+                        <div className="col-auto">
+                          <span className={`badge ${r.passed ? "bg-success" : "bg-danger"}`}>
+                            {r.passed ? "Passed" : "Failed"}
+                          </span>
                         </div>
-
-                        <div className="col-md-4">
-                          <div className="fw-semibold mb-1 text-muted small">
-                            Expected
-                          </div>
-                          <pre className="bg-light p-2 small">
-                            {r.expectedOutput || "(empty)"}
-                          </pre>
+                        <div className="col-auto text-muted small">
+                          Time: {r.time ?? "-"}s • Memory: {r.memory ?? "-"} KB
                         </div>
-
-                        <div className="col-md-4">
-                          <div className="fw-semibold mb-1 text-muted small">
-                            Your Output
-                          </div>
-                          <pre className="bg-light p-2 small">
-                            {r.actualOutput || "(empty)"}
-                          </pre>
-                        </div>
-                      </div>
-
-                      <div className="small text-muted mt-3">
-                        Time: {r.time ?? "-"}s • Memory: {r.memory ?? "-"} KB
                       </div>
 
                     </div>

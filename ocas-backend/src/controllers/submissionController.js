@@ -108,6 +108,9 @@ export const submitCode = async (req, res) => {
 
     return res.json({
       submissionId: sub._id,
+      testId: testId,
+      questionId: questionId,
+      testQuestionCount: test.questions.length,
       score,
       passedCases: passed,
       totalCases: q.testCases.length,

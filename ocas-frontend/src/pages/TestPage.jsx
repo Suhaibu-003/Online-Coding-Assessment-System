@@ -12,6 +12,8 @@ import { getTestByIdApi, runCodeApi, submitCodeApi, mySubmissionsApi } from "../
 import LoadingSpinner from "../components/LoadingSpinner";
 import CodeEditor from "../components/CodeEditor";
 
+const normalize = (s = "") => s.replace(/\r\n/g, "\n").trim();
+
 const templates = {
   python: "a,b=map(int,input().split())\nprint(a+b)",
   c: `#include <stdio.h>
@@ -64,6 +66,8 @@ export default function TestPage() {
   const [copiedMsg, setCopiedMsg] = useState("");
   const [hasAttempted, setHasAttempted] = useState(false);
   const [attemptMessage, setAttemptMessage] = useState("");
+  const [submittedQuestionIds, setSubmittedQuestionIds] = useState([]);
+  const [questionResultsMap, setQuestionResultsMap] = useState({});
   const [testCaseResults, setTestCaseResults] = useState([]);
   const [timeLeft, setTimeLeft] = useState(0);
   // eslint-disable-next-line no-unused-vars
@@ -83,14 +87,14 @@ export default function TestPage() {
 
   const handleSubmit = useCallback(async () => {
     if (hasAttempted) {
-      alert("Retakes are not allowed. This test has already been submitted.");
+      alert("Retakes are not allowed. This question has already been submitted.");
       return;
     }
 
     if (
       !selectedQ?._id ||
       !window.confirm(
-        "Are you sure you want to finish this test? Your submission will be final and cannot be retaken."
+        "Are you sure you want to finish this question? Your submission will be recorded and cannot be retaken."
       )
     ) {
       return;
@@ -98,7 +102,6 @@ export default function TestPage() {
 
     try {
       setSubmitting(true);
-      setHasAttempted(true);
       const res = await submitCodeApi({
         testId: id,
         questionId: selectedQ._id,
@@ -106,17 +109,38 @@ export default function TestPage() {
         sourceCode: code
       });
       
-      // Show success message before navigation
-      alert("✓ Test submitted successfully! Your score has been recorded.");
-      
-      // Navigate to results page
-      navigate("/result", { state: res.data });
+      setSubmittedQuestionIds((prev) => {
+        const next = [...new Set([...prev, selectedQ._id.toString()])];
+        return next;
+      });
+
+      setQuestionResultsMap((prev) => ({
+        ...prev,
+        [selectedQ._id.toString()]: res.data.results || []
+      }));
+
+      setHasAttempted(true);
+      setAttemptMessage("You have already submitted this question. You cannot retake it.");
+
+      alert("✓ Question submitted successfully! Your score has been recorded.");
+
+      const nextQuestion = test?.questions?.find(
+        (q) => q._id.toString() !== selectedQ._id.toString() &&
+        !submittedQuestionIds.includes(q._id.toString())
+      );
+
+      if (nextQuestion) {
+        setSelectedQ(nextQuestion);
+        setSubmitting(false);
+        return;
+      }
+
+      navigate("/result", { state: res.data, replace: true });
     } catch (e) {
-      setHasAttempted(false);
       setSubmitting(false);
       alert(e?.response?.data?.message || e.message);
     }
-  }, [selectedQ, language, code, id, navigate, hasAttempted]);
+  }, [selectedQ, language, code, id, navigate, hasAttempted, submittedQuestionIds, test]);
 
   useEffect(() => {
     (async () => {
@@ -125,20 +149,24 @@ export default function TestPage() {
         mySubmissionsApi()
       ]);
 
-      const previous = submissionsRes.data || [];
-      const attempted = previous.some(
-        (s) =>
-          s.status === "COMPLETED" &&
-          s.test?._id &&
-          s.test._id.toString() === id.toString()
-      );
-      setHasAttempted(attempted);
+      const submissions = submissionsRes.data || [];
+      const submittedMap = {};
+      const submittedIds = [];
 
-      if (attempted) {
-        setAttemptMessage(
-          "You have already attempted this test. Retakes are not allowed."
-        );
-      }
+      submissions.forEach((s) => {
+        if (
+          s.status === "COMPLETED" &&
+          s.test?._id?.toString() === id.toString() &&
+          s.question?._id
+        ) {
+          const qid = s.question._id.toString();
+          submittedMap[qid] = s.results || [];
+          if (!submittedIds.includes(qid)) submittedIds.push(qid);
+        }
+      });
+
+      setSubmittedQuestionIds(submittedIds);
+      setQuestionResultsMap(submittedMap);
 
       setTest(testRes.data);
       setSelectedQ(testRes.data?.questions?.[0] || null);
@@ -158,7 +186,22 @@ export default function TestPage() {
     })();
   }, [id]);
 
-  // Timer countdown
+  // Update hasAttempted when selectedQ or submission state changes
+  useEffect(() => {
+    if (!selectedQ) return;
+
+    const isSubmitted = submittedQuestionIds.includes(selectedQ._id?.toString());
+    setHasAttempted(isSubmitted);
+
+    if (isSubmitted) {
+      setAttemptMessage("You have already submitted this question. You cannot retake it.");
+    } else {
+      setAttemptMessage("");
+    }
+
+    const existingResults = questionResultsMap[selectedQ._id?.toString()];
+    setTestCaseResults(existingResults || []);
+  }, [selectedQ, submittedQuestionIds, questionResultsMap]);
   useEffect(() => {
     if (timeLeft <= 0) return;
 
@@ -284,6 +327,11 @@ export default function TestPage() {
     [selectedQ]
   );
 
+  const allCases = useMemo(
+    () => selectedQ?.testCases || [],
+    [selectedQ]
+  );
+
   const handleRun = async () => {
     if (hasAttempted) {
       alert("You cannot run code on this test because it is already completed.");
@@ -328,19 +376,19 @@ export default function TestPage() {
       return;
     }
 
-    if (visibleCases.length === 0) {
+    if (allCases.length === 0) {
       alert("No test cases to check.");
       return;
     }
 
     try {
       setRunning(true);
-      setRunText("Checking all test cases...");
+      setRunText("Checking all test cases (including hidden)...");
       
       const results = [];
       
-      for (let i = 0; i < visibleCases.length; i++) {
-        const tc = visibleCases[i];
+      for (let i = 0; i < allCases.length; i++) {
+        const tc = allCases[i];
         try {
           const res = await runCodeApi({
             language,
@@ -348,11 +396,13 @@ export default function TestPage() {
             customInput: tc.input || ""
           });
           
-          const passed = (res.data.stdout || "").trim() === (tc.expectedOutput || "").trim();
+          const passed = normalize(res.data.stdout || "") === normalize(tc.expectedOutput || "") && res.data.status?.id === 3;
+
           
           results.push({
             caseNumber: i + 1,
             passed,
+            isHidden: tc.isHidden,
             input: tc.input,
             expected: tc.expectedOutput,
             actual: res.data.stdout || res.data.stderr || "No output",
@@ -656,7 +706,7 @@ export default function TestPage() {
                   {testCaseResults.length > 0 && (
                     <div style={{ flex: 1, overflow: 'auto', borderTop: '2px solid #dee2e6' }}>
                       <div className="p-3">
-                        <h6 className="fw-bold mb-3">Test Case Results</h6>
+                        <h6 className="fw-bold mb-2">Test Case Results</h6>
                         <div className="d-flex flex-column gap-2">
                           {testCaseResults.map((result, idx) => (
                             <div
@@ -668,16 +718,10 @@ export default function TestPage() {
                               }}
                             >
                               <div className="d-flex justify-content-between align-items-center">
-                                <span className="fw-semibold">
-                                  Test Case {result.caseNumber}
-                                </span>
+                                <span className="fw-semibold">Test Case {result.caseNumber} {result.isHidden ? '(hidden)' : ''}</span>
                                 <span className={`badge ${result.passed ? 'bg-success' : 'bg-danger'}`}>
                                   {result.passed ? '✓ Passed' : '✗ Failed'}
                                 </span>
-                              </div>
-                              <div className="mt-2 text-muted" style={{ fontSize: '11px' }}>
-                                <div>Expected: {result.expected?.substring(0, 30)}...</div>
-                                <div>Got: {result.actual?.substring(0, 30)}...</div>
                               </div>
                             </div>
                           ))}

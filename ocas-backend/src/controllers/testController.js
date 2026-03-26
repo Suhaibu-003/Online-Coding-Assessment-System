@@ -183,9 +183,11 @@ export const getTestById = async (req, res) => {
   const safeTest = test.toObject();
   safeTest.questions = safeTest.questions.map((q) => ({
     ...q,
-    testCases: q.testCases.map((tc) =>
-      tc.isHidden ? { input: tc.input, isHidden: true } : tc
-    )
+    testCases: q.testCases.map((tc) => ({
+      ...tc,
+      // Keep hidden testcase expected output for frontend verification but still mark it hidden
+      isHidden: tc.isHidden || false
+    }))
   }));
 
   res.json(safeTest);
