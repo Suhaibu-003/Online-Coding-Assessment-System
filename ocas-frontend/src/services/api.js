@@ -25,6 +25,13 @@ export const loginApi = (data) => api.post("/auth/login", data);
 export const googleLoginApi = (data) => api.post("/auth/google", data);
 
 /* ==========================
+   OTP
+========================== */
+
+export const sendOtpApi = (email) => api.post("/otp/send", { email });
+export const verifyOtpApi = (email, otp) => api.post("/otp/verify", { email, otp });
+
+/* ==========================
    TESTS
 ========================== */
 

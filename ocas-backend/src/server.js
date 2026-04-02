@@ -8,6 +8,7 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import testRoutes from "./routes/testRoutes.js";
 import submissionRoutes from "./routes/submissionRoutes.js";
+import otpRoutes from "./routes/otpRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 
 
@@ -19,6 +20,7 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(express.json());
 app.use("/api/auth", authRoutes);
+app.use("/api/otp", otpRoutes);
 app.use("/api/tests", testRoutes);
 app.use("/api/submissions", submissionRoutes);
 
