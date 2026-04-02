@@ -122,7 +122,7 @@ export default function TestPage() {
       setHasAttempted(true);
       setAttemptMessage("You have already submitted this question. You cannot retake it.");
 
-      alert("✓ Question submitted successfully! Your score has been recorded.");
+      alert("Question submitted successfully. Your score has been recorded.");
 
       const nextQuestion = test?.questions?.find(
         (q) => q._id.toString() !== selectedQ._id.toString() &&
@@ -426,7 +426,7 @@ export default function TestPage() {
       const passedCount = results.filter(r => r.passed).length;
       const totalCount = results.length;
       
-      setRunText(`✓ Test Check Complete: ${passedCount}/${totalCount} test cases passed`);
+      setRunText(`Test check complete: ${passedCount}/${totalCount} test cases passed`);
     } catch (e) {
       setRunText("Error checking test cases: " + e.message);
     } finally {
@@ -444,7 +444,7 @@ export default function TestPage() {
 
   return (
     <div
-      className="d-flex flex-column"
+      className="editor-shell"
       style={{ 
         background: "linear-gradient(135deg, #f8f9fa, #eef2f7)",
         position: "fixed",
@@ -459,7 +459,7 @@ export default function TestPage() {
         padding: 0
       }}
     >
-      <div className="bg-white border-bottom shadow-sm" style={{ flexShrink: 0 }}>
+      <div className="editor-topbar" style={{ flexShrink: 0 }}>
         <div className="container-fluid px-3 px-lg-4 py-2">
           <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
             {/* Left Side: Test Info */}
@@ -497,7 +497,7 @@ export default function TestPage() {
 
               {/* Timer Badge */}
               <div className="badge bg-light text-dark border px-3 py-2 rounded-pill" style={{ whiteSpace: 'nowrap', fontSize: '14px' }}>
-                <span className="fw-bold">⏱ {formattedTime()}</span>
+                <span className="fw-bold">Time {formattedTime()}</span>
               </div>
 
               {/* Finish Button - Separate */}
@@ -720,7 +720,7 @@ export default function TestPage() {
                               <div className="d-flex justify-content-between align-items-center">
                                 <span className="fw-semibold">Test Case {result.caseNumber} {result.isHidden ? '(hidden)' : ''}</span>
                                 <span className={`badge ${result.passed ? 'bg-success' : 'bg-danger'}`}>
-                                  {result.passed ? '✓ Passed' : '✗ Failed'}
+                                  {result.passed ? 'Passed' : 'Failed'}
                                 </span>
                               </div>
                             </div>

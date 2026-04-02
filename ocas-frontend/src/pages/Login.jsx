@@ -62,49 +62,36 @@ export default function Login() {
   };
 
   return (
-    <div
-      className="min-vh-100 d-flex align-items-center justify-content-center px-3"
-      style={{
-        background: "linear-gradient(135deg, #f8f9fa, #e9ecef)",
-      }}
-    >
-      <div className="row w-100 shadow-lg rounded-4 overflow-hidden bg-white" style={{ maxWidth: "950px" }}>
-        
-        {/* Left Side */}
-        <div
-          className="col-md-6 d-none d-md-flex flex-column justify-content-center p-5 text-white"
-          style={{
-            background: "linear-gradient(135deg, #0d6efd, #0a58ca)",
-            minHeight: "600px",
-          }}
-        >
-          <h1 className="fw-bold mb-3"> Coding Assessment Platform </h1>
-          <p className="mb-4 text-white-50" style={{ lineHeight: "1.8" }}>
-            Conduct coding tests, evaluate candidates, and manage assessments
-            through one professional platform.
+    <div className="auth-shell">
+      <div className="auth-card">
+        <aside className="auth-panel">
+          <h1 className="fw-bold mb-3">Online Coding Assessment</h1>
+          <p className="muted mb-4">
+            Run coding tests, evaluate submissions, and manage candidate assessments in a clean,
+            reliable workspace.
           </p>
 
-          <div className="mt-3">
-            <div className="mb-3">
-              <h6 className="fw-semibold mb-1">✔ Timed Tests</h6>
-              <small className="text-white-50">Secure and structured coding assessments</small>
-            </div>
-            <div className="mb-3">
-              <h6 className="fw-semibold mb-1">✔ Role-Based Access</h6>
-              <small className="text-white-50">Separate dashboards for admin and candidate</small>
+          <div className="d-flex flex-column gap-3">
+            <div>
+              <div className="fw-semibold mb-1">Timed and structured tests</div>
+              <div className="small muted">Maintain fairness with focused, time-bound attempts.</div>
             </div>
             <div>
-              <h6 className="fw-semibold mb-1">✔ Easy Evaluation</h6>
-              <small className="text-white-50">Track submissions and performance smoothly</small>
+              <div className="fw-semibold mb-1">Role-specific experience</div>
+              <div className="small muted">Dedicated views for candidates and administrators.</div>
+            </div>
+            <div>
+              <div className="fw-semibold mb-1">Fast performance review</div>
+              <div className="small muted">Inspect test case outcomes and scores quickly.</div>
             </div>
           </div>
-        </div>
+        </aside>
 
-        {/* Right Side */}
-        <div className="col-md-6 p-4 p-md-5 d-flex flex-column justify-content-center">
-          <div className="text-center mb-4">
-            <h2 className="fw-bold mb-2">Welcome Back</h2>
-            <p className="text-muted mb-0">Login to continue to your account</p>
+        <section className="auth-form d-flex flex-column justify-content-center">
+          <div className="mb-4">
+            <div className="auth-step-label mb-2">Sign In</div>
+            <h2 className="fw-bold mb-1">Welcome back</h2>
+            <p className="section-subtitle">Login to continue to your dashboard</p>
           </div>
 
           {msg && (
@@ -115,14 +102,15 @@ export default function Login() {
 
           <form onSubmit={handleSubmit}>
             <div className="mb-3">
-              <label className="form-label fw-semibold">Email Address</label>
+              <label className="form-label fw-semibold">Email</label>
               <input
                 type="email"
-                className="form-control form-control-lg rounded-3"
+                className="form-control"
                 name="email"
                 value={form.email}
                 onChange={handleChange}
-                placeholder="Enter your email"
+                placeholder="you@example.com"
+                autoComplete="email"
               />
             </div>
 
@@ -130,43 +118,35 @@ export default function Login() {
               <label className="form-label fw-semibold">Password</label>
               <input
                 type="password"
-                className="form-control form-control-lg rounded-3"
+                className="form-control"
                 name="password"
                 value={form.password}
                 onChange={handleChange}
                 placeholder="Enter your password"
+                autoComplete="current-password"
               />
             </div>
 
             <div className="d-grid mb-3">
-              <button
-                type="submit"
-                className="btn btn-primary btn-lg rounded-3 fw-semibold"
-                disabled={loading}
-              >
-                {loading ? "Logging in..." : "Login"}
+              <button type="submit" className="btn btn-primary py-2" disabled={loading}>
+                {loading ? "Signing in..." : "Sign in"}
               </button>
             </div>
           </form>
 
-          <div className="text-center my-3 text-muted" style={{ fontSize: "14px" }}>
-            OR
-          </div>
+          <div className="text-center my-3 section-subtitle">or continue with</div>
 
           <div className="d-flex justify-content-center mb-3">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => setMsg("Google login failed")}
-            />
+            <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setMsg("Google login failed")} />
           </div>
 
-          <div className="text-center mt-3">
-            <span className="text-muted">New user? </span>
-            <Link to="/register" className="fw-semibold text-decoration-none">
-              Create an account
+          <div className="text-center mt-2">
+            <span className="section-subtitle">New user? </span>
+            <Link to="/register" className="fw-semibold text-decoration-none text-primary">
+              Create account
             </Link>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );

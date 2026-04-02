@@ -1,8 +1,10 @@
-export default function LoadingSpinner({ text = "Loading..." }) {
+export default function LoadingSpinner({ text = "Loading...", fullScreen = false }) {
   return (
-    <div className="d-flex align-items-center gap-2">
-      <div className="spinner-border" role="status" aria-hidden="true" />
-      <span>{text}</span>
+    <div className={fullScreen ? "loading-full" : "loading-overlay"}>
+      <div className="loading-card" role="status" aria-live="polite">
+        <div className="spinner-border spinner-border-sm text-primary" aria-hidden="true" />
+        <span className="fw-semibold" style={{ fontSize: "0.92rem" }}>{text}</span>
+      </div>
     </div>
   );
 }

@@ -10,7 +10,6 @@ import {
   Trophy,
   CheckCircle2,
   ClipboardList,
-  Settings
 } from "lucide-react";
 import { getPublishedTestsApi, testSubmissionsApi } from "../services/api";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -27,7 +26,7 @@ const toCSV = (rows) => {
     s.question?.title || "-",
     (s.language || "").toUpperCase(),
     s.status || "-",
-    `${s.score ?? 0}%`
+    `${s.score ?? 0}%`,
   ]);
   return [header, ...body].map((r) => r.map(esc).join(",")).join("\n");
 };
@@ -97,9 +96,7 @@ export default function AdminDashboard() {
     const text = search.trim().toLowerCase();
     let arr = [...subs];
 
-    if (onlyCompleted) {
-      arr = arr.filter((s) => s.status === "COMPLETED");
-    }
+    if (onlyCompleted) arr = arr.filter((s) => s.status === "COMPLETED");
 
     if (text) {
       arr = arr.filter((s) => {
@@ -107,12 +104,7 @@ export default function AdminDashboard() {
         const email = (s.candidate?.email || "").toLowerCase();
         const q = (s.question?.title || "").toLowerCase();
         const lang = (s.language || "").toLowerCase();
-        return (
-          name.includes(text) ||
-          email.includes(text) ||
-          q.includes(text) ||
-          lang.includes(text)
-        );
+        return name.includes(text) || email.includes(text) || q.includes(text) || lang.includes(text);
       });
     }
 
@@ -125,24 +117,17 @@ export default function AdminDashboard() {
     const avgScore =
       completed.length === 0
         ? 0
-        : Math.round(
-            completed.reduce((sum, s) => sum + (s.score || 0), 0) / completed.length
-          );
-    const top =
-      completed.length === 0
-        ? 0
-        : Math.max(...completed.map((s) => s.score || 0));
+        : Math.round(completed.reduce((sum, s) => sum + (s.score || 0), 0) / completed.length);
+    const top = completed.length === 0 ? 0 : Math.max(...completed.map((s) => s.score || 0));
 
-    const uniqueCandidates = new Set(
-      subs.map((s) => s.candidate?.email).filter(Boolean)
-    ).size;
+    const uniqueCandidates = new Set(subs.map((s) => s.candidate?.email).filter(Boolean)).size;
 
     return {
       totalSubs,
       completed: completed.length,
       avgScore,
       top,
-      uniqueCandidates
+      uniqueCandidates,
     };
   }, [subs]);
 
@@ -166,216 +151,146 @@ export default function AdminDashboard() {
     setTimeout(() => setCopied(false), 1500);
   };
 
-  if (loading) {
-    return <LoadingSpinner fullScreen />;
-  }
+  if (loading) return <LoadingSpinner fullScreen text="Loading admin dashboard..." />;
 
   return (
-    <div
-      className="min-vh-100 py-5"
-      style={{
-        background: "linear-gradient(135deg, #f8f9fa, #eef2f7)"
-      }}
-    >
+    <div className="page-shell">
       <div className="container">
-        {/* Top Banner */}
-        <div
-          className="rounded-4 p-4 p-md-5 mb-5 text-white shadow-sm"
-          style={{
-            background: "linear-gradient(135deg, #0d6efd, #0a58ca)"
-          }}
-        >
+        <section className="hero-panel mb-4 mb-md-5">
           <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
             <div>
-              <h1 className="fw-bold mb-2">Welcome back, {adminName}</h1>
-              <p className="mb-0 text-white-50" style={{ maxWidth: "760px" }}>
-                Manage assessments, review submissions, monitor candidate performance,
-                and export reports from one centralized admin dashboard.
+              <h1 className="h3 fw-bold mb-2">Welcome back, {adminName}</h1>
+              <p className="mb-0" style={{ maxWidth: "760px" }}>
+                Manage assessments, review candidate performance, and export submission data from
+                one professional admin console.
               </p>
             </div>
 
-            <Link
-              to="/admin/create-test"
-              className="btn btn-light fw-semibold px-4 rounded-3 d-inline-flex align-items-center gap-2"
-            >
-              <Plus size={18} />
-              Create Test
+            <Link to="/admin/create-test" className="btn btn-light fw-semibold d-inline-flex align-items-center gap-2">
+              <Plus size={16} /> Create Test
             </Link>
           </div>
-        </div>
+        </section>
 
-        {err && (
-          <div className="alert alert-danger rounded-4 shadow-sm">{err}</div>
-        )}
+        {err && <div className="alert alert-danger rounded-3">{err}</div>}
 
-        {/* Stats */}
-        <div className="row g-4 mb-5">
+        <section className="row g-3 g-xl-4 mb-4 mb-md-5">
           <div className="col-md-6 col-xl-3">
             <StatCard
               title="Total Submissions"
               value={stats.totalSubs}
-              subtitle="All records in selected test"
-              right={
-                <div
-                  className="d-inline-flex align-items-center justify-content-center rounded-3"
-                  style={{ width: 48, height: 48, background: "#f8f9fa" }}
-                >
-                  <ClipboardList size={20} className="text-primary" />
-                </div>
-              }
+              subtitle="Records in selected test"
+              right={<span className="metric-icon"><ClipboardList size={18} className="text-primary" /></span>}
             />
           </div>
-
           <div className="col-md-6 col-xl-3">
             <StatCard
               title="Completed"
               value={stats.completed}
               subtitle="Successfully evaluated"
-              right={
-                <div
-                  className="d-inline-flex align-items-center justify-content-center rounded-3"
-                  style={{ width: 48, height: 48, background: "#f8f9fa" }}
-                >
-                  <CheckCircle2 size={20} className="text-success" />
-                </div>
-              }
+              right={<span className="metric-icon"><CheckCircle2 size={18} className="text-success" /></span>}
             />
           </div>
-
           <div className="col-md-6 col-xl-3">
             <StatCard
               title="Average Score"
               value={`${stats.avgScore}%`}
-              subtitle="Mean score of completed submissions"
+              subtitle="Completed submissions"
               right={<ScoreRing score={stats.avgScore} />}
             />
           </div>
-
           <div className="col-md-6 col-xl-3">
             <StatCard
               title="Top Score"
               value={`${stats.top}%`}
               subtitle={`${stats.uniqueCandidates} unique candidates`}
-              right={
-                <div
-                  className="d-inline-flex align-items-center justify-content-center rounded-3"
-                  style={{ width: 48, height: 48, background: "#f8f9fa" }}
-                >
-                  <Trophy size={20} className="text-warning" />
-                </div>
-              }
+              right={<span className="metric-icon"><Trophy size={18} className="text-warning" /></span>}
             />
           </div>
-        </div>
+        </section>
 
-        {/* Controls */}
-        <div className="card border-0 shadow-sm rounded-4 mb-4">
-          <div className="card-body p-4">
-            <div className="row g-3 align-items-end">
-              <div className="col-lg-4">
-                <label className="form-label fw-semibold">Select Test</label>
-                <select
-                  className="form-select shadow-sm"
-                  value={selectedTestId}
-                  onChange={onChangeTest}
-                >
-                  {tests.map((t) => (
-                    <option key={t._id} value={t._id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+        <section className="surface-card p-3 p-md-4 mb-4">
+          <div className="row g-3 align-items-end">
+            <div className="col-lg-4">
+              <label className="form-label fw-semibold">Select Test</label>
+              <select className="form-select" value={selectedTestId} onChange={onChangeTest}>
+                {tests.map((t) => (
+                  <option key={t._id} value={t._id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              <div className="col-lg-4">
-                <label className="form-label fw-semibold">Search Submissions</label>
-                <div className="input-group shadow-sm">
-                  <span className="input-group-text bg-white border-end-0">
-                    <Search size={18} />
-                  </span>
-                  <input
-                    className="form-control border-start-0"
-                    placeholder="Candidate / email / question / language"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="col-lg-4">
-                <label className="form-label fw-semibold">Actions</label>
-                <div className="d-flex flex-wrap gap-2">
-                  <button
-                    className="btn btn-outline-primary d-flex align-items-center gap-2 rounded-3"
-                    onClick={() => navigate(`/admin/schedule-test/${selectedTestId}`)}
-                    disabled={!selectedTestId}
-                    title="Schedule test for specific users"
-                  >
-                    <Users size={16} />
-                    Schedule
-                  </button>
-
-                  <button
-                    className="btn btn-outline-secondary d-flex align-items-center gap-2 rounded-3"
-                    onClick={copyTestId}
-                    disabled={!selectedTestId}
-                  >
-                    <Copy size={16} />
-                    Copy ID
-                  </button>
-
-                  <button
-                    className="btn btn-outline-primary d-flex align-items-center gap-2 rounded-3"
-                    onClick={exportCSV}
-                    disabled={filteredSubs.length === 0}
-                  >
-                    <Download size={16} />
-                    Export CSV
-                  </button>
-                </div>
-
-                {copied && (
-                  <div className="text-success small mt-2 fw-medium">
-                    Test ID copied
-                  </div>
-                )}
+            <div className="col-lg-4">
+              <label className="form-label fw-semibold">Search Submissions</label>
+              <div className="input-group">
+                <span className="input-group-text bg-white border-end-0">
+                  <Search size={16} />
+                </span>
+                <input
+                  className="form-control border-start-0"
+                  placeholder="Candidate, email, question, language"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
               </div>
             </div>
 
-            <div className="form-check mt-3">
-              <input
-                id="onlyCompleted"
-                className="form-check-input"
-                type="checkbox"
-                checked={onlyCompleted}
-                onChange={(e) => setOnlyCompleted(e.target.checked)}
-              />
-              <label className="form-check-label" htmlFor="onlyCompleted">
-                Show completed submissions only
-              </label>
+            <div className="col-lg-4">
+              <label className="form-label fw-semibold">Actions</label>
+              <div className="d-flex flex-wrap gap-2">
+                <button
+                  className="btn btn-outline-primary d-flex align-items-center gap-2"
+                  onClick={() => navigate(`/admin/schedule-test/${selectedTestId}`)}
+                  disabled={!selectedTestId}
+                >
+                  <Users size={15} /> Schedule
+                </button>
+
+                <button className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={copyTestId} disabled={!selectedTestId}>
+                  <Copy size={15} /> Copy ID
+                </button>
+
+                <button className="btn btn-outline-primary d-flex align-items-center gap-2" onClick={exportCSV} disabled={filteredSubs.length === 0}>
+                  <Download size={15} /> Export CSV
+                </button>
+              </div>
+
+              {copied && <div className="small text-success fw-semibold mt-2">Test ID copied</div>}
             </div>
           </div>
-        </div>
 
-        {/* Table Section */}
-        <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
-          <div className="card-body p-4 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+          <div className="form-check mt-3">
+            <input
+              id="onlyCompleted"
+              className="form-check-input"
+              type="checkbox"
+              checked={onlyCompleted}
+              onChange={(e) => setOnlyCompleted(e.target.checked)}
+            />
+            <label className="form-check-label" htmlFor="onlyCompleted">
+              Show completed submissions only
+            </label>
+          </div>
+        </section>
+
+        <section className="surface-card overflow-hidden">
+          <div className="p-3 p-md-4 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
             <div>
-              <h5 className="fw-bold mb-1">Submission Overview</h5>
-              <p className="text-muted small mb-0">
-                Monitor candidate performance for the selected assessment
-              </p>
+              <h2 className="section-title mb-1">Submission Overview</h2>
+              <p className="section-subtitle">Monitor performance for the selected assessment.</p>
             </div>
-            <div className="small text-muted">
+            <div className="section-subtitle">
               {loadingSubs ? "Loading submissions..." : `${filteredSubs.length} result(s) shown`}
             </div>
           </div>
 
           <div className="table-responsive">
-            <table className="table align-middle mb-0">
-              <thead style={{ backgroundColor: "#f8f9fa" }}>
-                <tr className="text-muted small text-uppercase">
-                  <th className="px-4 py-3">Date</th>
+            <table className="table table-modern align-middle">
+              <thead>
+                <tr>
+                  <th className="px-4">Date</th>
                   <th>Candidate</th>
                   <th>Email</th>
                   <th>Question</th>
@@ -394,86 +309,52 @@ export default function AdminDashboard() {
                   </tr>
                 ) : filteredSubs.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="text-center py-5 text-muted">
+                    <td colSpan="7" className="text-center py-5 section-subtitle">
                       No submissions found for the current filters.
                     </td>
                   </tr>
                 ) : (
                   filteredSubs.map((s) => (
                     <tr key={s._id}>
-                      <td className="px-4 text-secondary small">
-                        {new Date(s.createdAt).toLocaleString()}
-                      </td>
-
+                      <td className="px-4 section-subtitle">{new Date(s.createdAt).toLocaleString()}</td>
+                      <td className="fw-semibold">{s.candidate?.name || "-"}</td>
+                      <td className="section-subtitle">{s.candidate?.email || "-"}</td>
+                      <td>{s.question?.title || "-"}</td>
                       <td>
-                        <div className="fw-semibold text-dark">
-                          {s.candidate?.name || "-"}
-                        </div>
-                      </td>
-
-                      <td className="text-muted small">
-                        {s.candidate?.email || "-"}
-                      </td>
-
-                      <td>
-                        <div className="fw-medium">
-                          {s.question?.title || "-"}
-                        </div>
-                      </td>
-
-                      <td>
-                        <span className="badge bg-light text-dark border px-3 py-2 rounded-pill text-uppercase">
+                        <span className="badge rounded-pill border bg-white text-dark px-3 py-2 text-uppercase">
                           {s.language || "-"}
                         </span>
                       </td>
-
                       <td>
                         <span
                           className={`badge rounded-pill px-3 py-2 ${
-                            s.status === "COMPLETED"
-                              ? "bg-success-subtle text-success"
-                              : "bg-warning-subtle text-warning"
+                            s.status === "COMPLETED" ? "badge-soft-success" : "badge-soft-warning"
                           }`}
                         >
                           {s.status}
                         </span>
                       </td>
-
-                      <td className="text-end px-4 fw-bold text-primary">
-                        {s.score ?? 0}%
-                      </td>
+                      <td className="text-end px-4 fw-bold text-primary">{s.score ?? 0}%</td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
           </div>
+        </section>
 
-          <div className="card-footer bg-white text-muted small">
-            Pro tip: Use search and completed filter together for faster analysis.
-          </div>
-        </div>
-
-        {/* Bottom Quick Links */}
-        <div className="row g-4 mt-1">
+        <section className="row g-3 g-xl-4 mt-1">
           <div className="col-md-6">
-            <div className="card border-0 shadow-sm rounded-4 h-100">
-              <div className="card-body p-4">
+            <div className="surface-card h-100">
+              <div className="p-3 p-md-4">
                 <div className="d-flex align-items-center gap-3 mb-3">
-                  <div
-                    className="d-inline-flex align-items-center justify-content-center rounded-3"
-                    style={{ width: 46, height: 46, background: "#f8f9fa" }}
-                  >
-                    <FileText size={20} className="text-primary" />
-                  </div>
+                  <span className="metric-icon"><FileText size={18} className="text-primary" /></span>
                   <div>
-                    <h6 className="fw-bold mb-1">Assessment Management</h6>
-                    <p className="text-muted small mb-0">
-                      Create and maintain coding tests for candidates
-                    </p>
+                    <h3 className="h6 fw-bold mb-1">Assessment Management</h3>
+                    <p className="section-subtitle mb-0">Create and maintain coding assessments.</p>
                   </div>
                 </div>
-                <Link to="/admin/create-test" className="btn btn-primary rounded-3">
+                <Link to="/admin/create-test" className="btn btn-primary">
                   Go to Create Test
                 </Link>
               </div>
@@ -481,33 +362,22 @@ export default function AdminDashboard() {
           </div>
 
           <div className="col-md-6">
-            <div className="card border-0 shadow-sm rounded-4 h-100">
-              <div className="card-body p-4">
+            <div className="surface-card h-100">
+              <div className="p-3 p-md-4">
                 <div className="d-flex align-items-center gap-3 mb-3">
-                  <div
-                    className="d-inline-flex align-items-center justify-content-center rounded-3"
-                    style={{ width: 46, height: 46, background: "#f8f9fa" }}
-                  >
-                    <Users size={20} className="text-success" />
-                  </div>
+                  <span className="metric-icon"><Users size={18} className="text-success" /></span>
                   <div>
-                    <h6 className="fw-bold mb-1">Candidate Monitoring</h6>
-                    <p className="text-muted small mb-0">
-                      Review candidate performance and export results
-                    </p>
+                    <h3 className="h6 fw-bold mb-1">Candidate Monitoring</h3>
+                    <p className="section-subtitle mb-0">Export filtered result sets for reporting.</p>
                   </div>
                 </div>
-                <button
-                  className="btn btn-outline-primary rounded-3"
-                  onClick={exportCSV}
-                  disabled={filteredSubs.length === 0}
-                >
+                <button className="btn btn-outline-primary" onClick={exportCSV} disabled={filteredSubs.length === 0}>
                   Export Current Results
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );

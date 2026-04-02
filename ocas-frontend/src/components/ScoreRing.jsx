@@ -1,17 +1,17 @@
-export default function ScoreRing({ score = 0, size = 64, stroke = 8 }) {
+export default function ScoreRing({ score = 0, size = 64, stroke = 8, color = "#2563eb" }) {
   const s = Math.max(0, Math.min(100, Number(score) || 0));
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const dash = (s / 100) * c;
 
   return (
-    <svg width={size} height={size} style={{ display: "block" }}>
+    <svg width={size} height={size} style={{ display: "block", color }} aria-label={`Score ${s} percent`}>
       <circle
         cx={size / 2}
         cy={size / 2}
         r={r}
         fill="none"
-        stroke="rgba(255,255,255,0.2)"
+        stroke="rgba(37, 99, 235, 0.14)"
         strokeWidth={stroke}
       />
       <circle
