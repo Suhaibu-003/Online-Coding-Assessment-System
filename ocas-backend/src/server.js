@@ -19,6 +19,14 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(express.json());
+
+// Support both `/api/*` and legacy `/*` frontend route shapes.
+// This keeps older deployments working while the frontend rollout catches up.
+app.use("/auth", authRoutes);
+app.use("/otp", otpRoutes);
+app.use("/tests", testRoutes);
+app.use("/submissions", submissionRoutes);
+
 app.use("/api/auth", authRoutes);
 app.use("/api/otp", otpRoutes);
 app.use("/api/tests", testRoutes);
