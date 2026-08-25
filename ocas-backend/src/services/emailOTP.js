@@ -14,9 +14,15 @@ const getTransporter = () => {
   }
   
   console.log("Creating transporter with email:", user);
+
+  const port = Number(process.env.EMAIL_PORT || 587);
   
   return nodemailer.createTransport({
-    service: "gmail",
+    host: process.env.EMAIL_HOST || "smtp.gmail.com",
+    port,
+    secure: process.env.EMAIL_SECURE === "true" || port === 465,
+    requireTLS: port !== 465,
+    family: 4,
     auth: {
       user: user,
       pass: pass
