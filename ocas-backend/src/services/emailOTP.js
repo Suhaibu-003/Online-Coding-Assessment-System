@@ -3,6 +3,8 @@ import nodemailer from "nodemailer";
 // In-memory OTP storage: { email: { otp, expiryTime } }
 const otpStore = {};
 
+const normalizeEmail = (email) => email.trim().toLowerCase();
+
 // Create transporter lazily - ensures env vars are loaded
 const getTransporter = () => {
   const user = process.env.EMAIL_USER;
@@ -49,6 +51,8 @@ export const generateOTP = () => {
  */
 export const sendOTPEmail = async (email) => {
   try {
+    email = normalizeEmail(email);
+
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -57,7 +61,6 @@ export const sendOTPEmail = async (email) => {
 
     // Generate OTP
     const otp = generateOTP();
-    console.log(`Generated OTP for ${email}: ${otp} (digits only)`);
 
     // Set 5-minute expiry
     const expiryTime = Date.now() + 5 * 60 * 1000;
@@ -67,6 +70,7 @@ export const sendOTPEmail = async (email) => {
       from: process.env.EMAIL_USER,
       to: email,
       subject: "Your OTP for Registration",
+      text: `Your registration OTP is ${otp}. It expires in 5 minutes.`,
       html: `
         <div style="font-family: Arial, sans-serif; padding: 40px; background-color: #f5f5f5; border-radius: 10px; max-width: 500px; margin: 0 auto;">
           <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
@@ -91,7 +95,8 @@ export const sendOTPEmail = async (email) => {
       `
     };
 
-    await getTransporter().sendMail(mailOptions);
+    const delivery = await getTransporter().sendMail(mailOptions);
+    console.log(`OTP email accepted by SMTP for ${email}: ${delivery.messageId}`);
 
     // Store only after the email was sent successfully. A failed send should
     // not leave an OTP that the user never received.
@@ -112,6 +117,8 @@ export const sendOTPEmail = async (email) => {
  */
 export const verifyOTP = (email, otp) => {
   try {
+    email = normalizeEmail(email);
+
     // Validate OTP is digits only and exactly 6 characters
     const otpString = otp.toString().trim();
     if (!/^\d{6}$/.test(otpString)) {
