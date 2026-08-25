@@ -6,11 +6,16 @@ import { sendOTPEmail, verifyOTP } from "../services/emailOTP.js";
  * Send OTP to email
  */
 export const sendOTP = asyncHandler(async (req, res) => {
-  const { email } = req.body;
+  const email = req.body?.email?.trim();
 
   if (!email) {
     res.status(400);
     throw new Error("Email is required");
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    res.status(400);
+    throw new Error("Please provide a valid email address");
   }
 
   const result = await sendOTPEmail(email);

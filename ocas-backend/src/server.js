@@ -19,12 +19,20 @@ const PORT = process.env.PORT || 5000;
 const allowedOrigins = (process.env.CLIENT_URL || "")
   .split(",")
   .map((origin) => origin.trim())
+  .map((origin) => origin.replace(/\/+$/, ""))
   .filter(Boolean);
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  const normalizedOrigin = origin.replace(/\/+$/, "");
+  return allowedOrigins.includes(normalizedOrigin)
+    || normalizedOrigin === "https://coding-assement-system.vercel.app"
+    || /^https?:\/\/localhost(:\d+)?$/.test(normalizedOrigin);
+};
 
 app.use(cors({
   origin: (origin, callback) => {
     // Allow non-browser requests and configured frontend origins.
-    if (!origin || allowedOrigins.includes(origin) || /^https?:\/\/localhost(:\d+)?$/.test(origin)) {
+    if (isAllowedOrigin(origin)) {
       return callback(null, true);
     }
     return callback(new Error("CORS origin is not allowed"));
