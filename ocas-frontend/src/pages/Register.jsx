@@ -43,7 +43,10 @@ export default function Register() {
       setStep("verify");
       setOtpTimer(300);
     } catch (err) {
-      setMsg(err?.response?.data?.message || "Failed to send OTP");
+      const message = err?.code === "ECONNABORTED"
+        ? "The server took too long to respond. Please try again."
+        : err?.response?.data?.message || "Failed to send OTP";
+      setMsg(message);
     } finally {
       setLoading(false);
     }

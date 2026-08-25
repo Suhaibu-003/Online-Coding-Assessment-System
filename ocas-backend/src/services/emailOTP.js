@@ -20,7 +20,10 @@ const getTransporter = () => {
     auth: {
       user: user,
       pass: pass
-    }
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000
   });
 };
 
@@ -53,9 +56,6 @@ export const sendOTPEmail = async (email) => {
     // Set 5-minute expiry
     const expiryTime = Date.now() + 5 * 60 * 1000;
 
-    // Store OTP
-    otpStore[email] = { otp, expiryTime };
-
     // Send email
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -86,6 +86,10 @@ export const sendOTPEmail = async (email) => {
     };
 
     await getTransporter().sendMail(mailOptions);
+
+    // Store only after the email was sent successfully. A failed send should
+    // not leave an OTP that the user never received.
+    otpStore[email] = { otp, expiryTime };
 
     return {
       success: true,
